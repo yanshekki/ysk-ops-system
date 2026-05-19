@@ -11,11 +11,9 @@ if ($project_id) {
     $project = db_fetch_one("SELECT * FROM projects WHERE id = ?", [$project_id]);
     
     if ($project) {
-        // Simple AI-like analysis (rule-based)
         $risk_score = 0;
         $recommendations = [];
         
-        // Risk calculation
         if ($project['progress_percent'] < 30 && strtotime($project['end_date']) < time()) {
             $risk_score = 85;
             $recommendations[] = '項目已過期且進度低於 30%，建議立即開會討論調整期限';
@@ -27,7 +25,6 @@ if ($project_id) {
             $recommendations[] = '項目進度良好，繼續保持';
         }
         
-        // Budget check
         $actual_cost = db_fetch_one("SELECT COALESCE(SUM(hours)*800, 0) as cost FROM timesheets WHERE project_id = ?", [$project_id])['cost'] ?? 0;
         if ($actual_cost > $project['budget'] * 0.8) {
             $risk_score += 25;
@@ -51,29 +48,24 @@ $projects = db_fetch_all("SELECT id, title FROM projects ORDER BY title");
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 輔助 | <?= SITE_NAME ?></title>
+    <title>AI 助手 | <?= SITE_NAME ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>
 <div class="d-flex">
-    <div class="sidebar p-3 text-white" style="width:240px;min-height:100vh;background:#212529;flex-shrink:0;">
-        <div class="d-flex align-items-center mb-4 px-2">
-            <i class="bi bi-gear-fill fs-3 me-2 text-primary"></i>
-            <span class="fs-4 fw-bold">YSK Ops</span>
-        </div>
-        <nav class="nav flex-column">
-            <a href="index.php" class="nav-link mb-1"><i class="bi bi-speedometer2 me-2"></i> 儀表板</a>
-            <a href="ai_assistant.php" class="nav-link active mb-1"><i class="bi bi-robot me-2"></i> AI 輔助</a>
-            <hr class="border-secondary my-3">
-            <a href="logout.php" class="nav-link text-danger"><i class="bi bi-box-arrow-right me-2"></i> 登出</a>
-        </nav>
-    </div>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-nav-toggle btn d-md-none" onclick="toggleSidebar()">
+        <i class="bi bi-list fs-4"></i>
+    </button>
+    
+    <!-- Unified Sidebar -->
+    <?php include 'includes/sidebar.php'; ?>
     
     <div class="flex-grow-1 p-4">
-        <h2 class="mb-4"><i class="bi bi-robot me-2"></i> AI 項目風險分析輔助</h2>
+        <h2><i class="bi bi-robot me-2"></i> AI 項目風險分析輔助</h2>
         
-        <div class="card mb-4">
+        <div class="card mb-4 mt-3">
             <div class="card-body">
                 <form method="GET" class="row g-3 align-items-end">
                     <div class="col-md-8">
@@ -83,7 +75,7 @@ $projects = db_fetch_all("SELECT id, title FROM projects ORDER BY title");
                             <?php foreach ($projects as $p): ?>
                             <option value="<?= $p['id'] ?>" <?= $project_id == $p['id'] ? 'selected' : '' ?>><?= htmlspecialchars($p['title']) ?></option>
                             <?php endforeach; ?>
-                        </select>
+                            </select>
                     </div>
                     <div class="col-md-4">
                         <button type="submit" class="btn btn-primary w-100">
@@ -141,5 +133,11 @@ $projects = db_fetch_all("SELECT id, title FROM projects ORDER BY title");
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('show');
+}
+</script>
 </body>
 </html>
