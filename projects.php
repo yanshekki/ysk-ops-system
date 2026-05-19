@@ -155,7 +155,7 @@ $service_options = [
                             <?php foreach ($service_options as $val => $label): ?>
                             <option value="<?= $val ?>" <?= $service_filter==$val?'selected':'' ?>><?= $label ?></option>
                             <?php endforeach; ?>
-                        </select>
+                            </select>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">狀態</label>
@@ -203,16 +203,16 @@ $service_options = [
                         ?>
                         <tr>
                             <td><?= $p['id'] ?></td>
-                            <td><strong><?= htmlspecialchars($p['title']) ?></strong><br><small class="text-muted"><?= htmlspecialchars(substr($p['description'],0,50)) ?>...</small></td>
-                            <td><?= htmlspecialchars($p['company_name']) ?></td>
+                            <td><strong><?= htmlspecialchars($p['title'] ?? '') ?></strong><br><small class="text-muted"><?= htmlspecialchars(substr($p['description'] ?? '',0,50)) ?>...</small></td>
+                            <td><?= htmlspecialchars($p['company_name'] ?? '') ?></td>
                             <td><span class="badge bg-primary"><?= $svc_label ?></span></td>
                             <td><span class="badge bg-<?= $status_class ?>"><?= ucfirst(str_replace('_',' ',$p['status'])) ?></span></td>
                             <td>
                                 <div class="progress" style="height:8px;"><div class="progress-bar" style="width:<?= $p['progress_percent'] ?>%"></div></div>
                                 <small><?= $p['progress_percent'] ?>%</small>
                             </td>
-                            <td class="text-end"><?= number_format($p['budget'], 0) ?></td>
-                            <td><?= htmlspecialchars($p['pm_name'] ?: '未分配') ?></td>
+                            <td class="text-end"><?= number_format($p['budget'] ?? 0, 0) ?></td>
+                            <td><?= htmlspecialchars($p['pm_name'] ?? '未分配') ?></td>
                             <td>
                                 <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProjectModal<?= $p['id'] ?>">編輯</button>
                                 <form method="POST" class="d-inline" onsubmit="return confirm('確定刪除此項目？')">
@@ -239,7 +239,7 @@ $service_options = [
                                                     <label class="form-label">客戶 *</label>
                                                     <select name="client_id" class="form-select" required>
                                                         <?php foreach ($clients as $cl): ?>
-                                                        <option value="<?= $cl['id'] ?>" <?= $p['client_id']==$cl['id']?'selected':'' ?>><?= htmlspecialchars($cl['company_name']) ?></option>
+                                                        <option value="<?= $cl['id'] ?>" <?= $p['client_id']==$cl['id']?'selected':'' ?>><?= htmlspecialchars($cl['company_name'] ?? '') ?></option>
                                                         <?php endforeach; ?>
                                                     </select>
                                                 </div>
@@ -253,34 +253,34 @@ $service_options = [
                                                 </div>
                                                 <div class="col-12">
                                                     <label class="form-label">項目名稱 *</label>
-                                                    <input type="text" name="title" class="form-control" value="<?= htmlspecialchars($p['title']) ?>" required>
+                                                    <input type="text" name="title" class="form-control" value="<?= htmlspecialchars($p['title'] ?? '') ?>" required>
                                                 </div>
                                                 <div class="col-12">
                                                     <label class="form-label">項目描述</label>
-                                                    <textarea name="description" class="form-control" rows="3"><?= htmlspecialchars($p['description']) ?></textarea>
+                                                    <textarea name="description" class="form-control" rows="3"><?= htmlspecialchars($p['description'] ?? '') ?></textarea>
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label">開始日期</label>
-                                                    <input type="date" name="start_date" class="form-control" value="<?= $p['start_date'] ?>">
+                                                    <input type="date" name="start_date" class="form-control" value="<?= $p['start_date'] ?? '' ?>">
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label">結束日期</label>
-                                                    <input type="date" name="end_date" class="form-control" value="<?= $p['end_date'] ?>">
+                                                    <input type="date" name="end_date" class="form-control" value="<?= $p['end_date'] ?? '' ?>">
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label">預算 (HK$)</label>
-                                                    <input type="number" step="0.01" name="budget" class="form-control" value="<?= $p['budget'] ?>">
+                                                    <input type="number" step="0.01" name="budget" class="form-control" value="<?= $p['budget'] ?? 0 ?>">
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label">進度 %</label>
-                                                    <input type="number" name="progress_percent" class="form-control" min="0" max="100" value="<?= $p['progress_percent'] ?>">
+                                                    <input type="number" name="progress_percent" class="form-control" min="0" max="100" value="<?= $p['progress_percent'] ?? 0 ?>">
                                                 </div>
                                                 <div class="col-md-6">
                                                     <label class="form-label">負責 PM</label>
                                                     <select name="assigned_pm_id" class="form-select">
                                                         <option value="">未分配</option>
                                                         <?php foreach ($users as $u): ?>
-                                                        <option value="<?= $u['id'] ?>" <?= $p['assigned_pm_id']==$u['id']?'selected':'' ?>><?= htmlspecialchars($u['full_name']) ?></option>
+                                                        <option value="<?= $u['id'] ?>" <?= $p['assigned_pm_id']==$u['id']?'selected':'' ?>><?= htmlspecialchars($u['full_name'] ?? '') ?></option>
                                                         <?php endforeach; ?>
                                                     </select>
                                                 </div>
@@ -351,7 +351,7 @@ $service_options = [
                             <select name="client_id" class="form-select" required>
                                 <option value="">請選擇客戶...</option>
                                 <?php foreach ($clients as $cl): ?>
-                                <option value="<?= $cl['id'] ?>"><?= htmlspecialchars($cl['company_name']) ?></option>
+                                <option value="<?= $cl['id'] ?>"><?= htmlspecialchars($cl['company_name'] ?? '') ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -392,7 +392,7 @@ $service_options = [
                             <select name="assigned_pm_id" class="form-select">
                                 <option value="">未分配</option>
                                 <?php foreach ($users as $u): ?>
-                                <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['full_name']) ?></option>
+                                <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['full_name'] ?? '') ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
