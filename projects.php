@@ -5,8 +5,12 @@ require_once 'includes/auth.php';
 require_login();
 
 $success = $error = '';
-$action = $_GET['action'] ?? '';
-$id = $_GET['id'] ?? 0;
+$search = $_GET['search'] ?? '';
+$service_filter = $_GET['service'] ?? '';
+$status_filter = $_GET['status'] ?? '';
+$page = max(1, (int)($_GET['page'] ?? 1));
+$per_page = 15;
+$offset = ($page - 1) * $per_page;
 
 // Handle POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -29,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             db_insert('projects', $data);
             $success = '項目新增成功！';
         } else {
+            $id = $_POST['project_id'];
             db_update('projects', $data, 'id = ?', [$id]);
             $success = '項目已更新！';
         }
@@ -40,23 +45,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Data for dropdowns
+// Build query for count
+$count_sql = "SELECT COUNT(*) as total FROM projects WHERE 1=1";
+$count_params = [];
+
+if ($search) {
+    $count_sql .= " AND (title LIKE ? OR description LIKE ? OR (SELECT company_name FROM clients WHERE id = projects.client_id) LIKE ?)";
+    $count_params[] = "%$search%";
+    $count_params[] = "%$search%";
+    $count_params[] = "%$search%";
+}
+
+if ($service_filter) {
+    $count_sql .= " AND service_type = ?";
+    $count_params[] = $service_filter;
+}
+
+if ($status_filter) {
+    $count_sql .= " AND status = ?";
+    $count_params[] = $status_filter;
+}
+
+total = db_fetch_one($count_sql, $count_params)['total'] ?? 0;
+$total_pages = ceil($total / $per_page);
+
+// Fetch projects with pagination
+$sql = "SELECT p.*, c.company_name FROM projects p LEFT JOIN clients c ON p.client_id = c.id WHERE 1=1";
+$params = [];
+
+if ($search) {
+    $sql .= " AND (p.title LIKE ? OR p.description LIKE ? OR c.company_name LIKE ?)";
+    $params[] = "%$search%";
+    $params[] = "%$search%";
+    $params[] = "%$search%";
+}
+
+if ($service_filter) {
+    $sql .= " AND p.service_type = ?";
+    $params[] = $service_filter;
+}
+
+if ($status_filter) {
+    $sql .= " AND p.status = ?";
+    $params[] = $status_filter;
+}
+
+$sql .= " ORDER BY p.updated_at DESC LIMIT $per_page OFFSET $offset";
+$projects = db_fetch_all($sql, $params);
+
 $clients = db_fetch_all("SELECT id, company_name FROM clients ORDER BY company_name");
 $users = db_fetch_all("SELECT id, full_name FROM users WHERE role IN ('admin','pm') ORDER BY full_name");
-
-// Fetch projects with joins
-$projects = db_fetch_all("
-    SELECT p.*, c.company_name, u.full_name as pm_name 
-    FROM projects p 
-    LEFT JOIN clients c ON p.client_id = c.id 
-    LEFT JOIN users u ON p.assigned_pm_id = u.id 
-    ORDER BY p.updated_at DESC
-");
-
-$edit_project = null;
-if ($action === 'edit' && $id) {
-    $edit_project = db_fetch_one("SELECT * FROM projects WHERE id = ?", [$id]);
-}
 
 $service_options = [
     'ai_automation' => 'AI 自動化 (私有 LLM)',
@@ -74,7 +112,6 @@ $service_options = [
     <title>項目管理 | <?= SITE_NAME ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <style>body{background:#f8f9fa;}.table th{background:#f1f3f5;}</style>
 </head>
 <body>
 <div class="d-flex">
@@ -85,6 +122,7 @@ $service_options = [
         </div>
         <nav class="nav flex-column">
             <a href="index.php" class="nav-link mb-1"><i class="bi bi-speedometer2 me-2"></i> 儀表板</a>
+            <a href="users.php" class="nav-link mb-1"><i class="bi bi-people-fill me-2"></i> 用戶管理</a>
             <a href="clients.php" class="nav-link mb-1"><i class="bi bi-people me-2"></i> 客戶管理</a>
             <a href="projects.php" class="nav-link active mb-1"><i class="bi bi-folder me-2"></i> 項目管理</a>
             <a href="tasks.php" class="nav-link mb-1"><i class="bi bi-list-task me-2"></i> 任務追蹤</a>
@@ -98,10 +136,49 @@ $service_options = [
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-folder me-2"></i> 項目管理</h2>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProjectModal">
-                <i class="bi bi-plus-circle me-1"></i> 新增項目</button>
+                <i class="bi bi-plus-circle me-1"></i> 新增項目
+            </button>
         </div>
         
-        <?php if ($success): ?><div class="alert alert-success alert-dismissible fade show"><?= $success ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
+        <!-- Search and Filter -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <form method="GET" class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">搜尋</label>
+                        <input type="text" name="search" class="form-control" value="<?= htmlspecialchars($search) ?>" placeholder="項目名稱 / 客戶">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">服務類型</label>
+                        <select name="service" class="form-select">
+                            <option value="">全部</option>
+                            <?php foreach ($service_options as $val => $label): ?>
+                            <option value="<?= $val ?>" <?= $service_filter==$val?'selected':'' ?>><?= $label ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">狀態</label>
+                        <select name="status" class="form-select">
+                            <option value="">全部</option>
+                            <option value="planning" <?= $status_filter=='planning'?'selected':'' ?>>規劃中</option>
+                            <option value="in_progress" <?= $status_filter=='in_progress'?'selected':'' ?>>進行中</option>
+                            <option value="review" <?= $status_filter=='review'?'selected':'' ?>>審核中</option>
+                            <option value="completed" <?= $status_filter=='completed'?'selected':'' ?>>已完成</option>
+                            <option value="on_hold" <?= $status_filter=='on_hold'?'selected':'' ?>>暫停</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-outline-primary w-100 mt-4">搜尋</button>
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <a href="projects.php" class="btn btn-outline-secondary mt-4">清除</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <?php if ($success): ?><div class="alert alert-success"><?= $success ?></div><?php endif; ?>
         
         <div class="card">
             <div class="card-body p-0">
@@ -126,7 +203,7 @@ $service_options = [
                         ?>
                         <tr>
                             <td><?= $p['id'] ?></td>
-                            <td><strong><?= htmlspecialchars($p['title']) ?></strong><br><small class="text-muted"><?= htmlspecialchars(substr($p['description'],0,60)) ?>...</small></td>
+                            <td><strong><?= htmlspecialchars($p['title']) ?></strong><br><small class="text-muted"><?= htmlspecialchars(substr($p['description'],0,50)) ?>...</small></td>
                             <td><?= htmlspecialchars($p['company_name']) ?></td>
                             <td><span class="badge bg-primary"><?= $svc_label ?></span></td>
                             <td><span class="badge bg-<?= $status_class ?>"><?= ucfirst(str_replace('_',' ',$p['status'])) ?></span></td>
@@ -137,24 +214,26 @@ $service_options = [
                             <td class="text-end"><?= number_format($p['budget'], 0) ?></td>
                             <td><?= htmlspecialchars($p['pm_name'] ?: '未分配') ?></td>
                             <td>
-                                <a href="?action=edit&id=<?= $p['id'] ?>" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProjectModal<?= $p['id'] ?>">編輯</a>
-                                <form method="POST" class="d-inline" onsubmit="return confirm('確定刪除此項目？所有相關任務會被刪除！')">
+                                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProjectModal<?= $p['id'] ?>">編輯</button>
+                                <form method="POST" class="d-inline" onsubmit="return confirm('確定刪除此項目？')">
                                     <input type="hidden" name="project_id" value="<?= $p['id'] ?>">
                                     <button type="submit" name="delete_project" class="btn btn-sm btn-outline-danger">刪除</button>
                                 </form>
                             </td>
                         </tr>
-                        <!-- Edit Modal for each project -->
+                        
+                        <!-- Edit Modal -->
                         <div class="modal fade" id="editProjectModal<?= $p['id'] ?>" tabindex="-1">
                             <div class="modal-dialog modal-xl">
                                 <div class="modal-content">
                                     <form method="POST">
                                         <div class="modal-header bg-primary text-white">
-                                            <h5 class="modal-title">編輯項目 #<?= $p['id'] ?> - <?= htmlspecialchars($p['title']) ?></h5>
+                                            <h5 class="modal-title">編輯項目</h5>
                                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                         </div>
                                         <div class="modal-body">
                                             <input type="hidden" name="update_project" value="1">
+                                            <input type="hidden" name="project_id" value="<?= $p['id'] ?>">
                                             <div class="row g-3">
                                                 <div class="col-md-6">
                                                     <label class="form-label">客戶 *</label>
@@ -197,7 +276,7 @@ $service_options = [
                                                     <input type="number" name="progress_percent" class="form-control" min="0" max="100" value="<?= $p['progress_percent'] ?>">
                                                 </div>
                                                 <div class="col-md-6">
-                                                    <label class="form-label">負責項目經理 (PM)</label>
+                                                    <label class="form-label">負責 PM</label>
                                                     <select name="assigned_pm_id" class="form-select">
                                                         <option value="">未分配</option>
                                                         <?php foreach ($users as $u): ?>
@@ -231,6 +310,27 @@ $service_options = [
                 </table>
             </div>
         </div>
+        
+        <!-- Pagination -->
+        <?php if ($total_pages > 1): ?>
+        <div class="d-flex justify-content-center mt-3">
+            <nav>
+                <ul class="pagination">
+                    <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?page=<?= $page-1 ?>&search=<?= urlencode($search) ?>&service=<?= $service_filter ?>&status=<?= $status_filter ?>">上一頁</a>
+                    </li>
+                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                    <li class="page-item <?= $i == $page ? 'active' : '' ?>">
+                        <a class="page-link" href="?page=<?= $i ?>&search=<?= urlencode($search) ?>&service=<?= $service_filter ?>&status=<?= $status_filter ?>"><?= $i ?></a>
+                    </li>
+                    <?php endfor; ?>
+                    <li class="page-item <?= $page >= $total_pages ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?page=<?= $page+1 ?>&search=<?= urlencode($search) ?>&service=<?= $service_filter ?>&status=<?= $status_filter ?>">下一頁</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -288,7 +388,7 @@ $service_options = [
                             <input type="number" name="progress_percent" class="form-control" min="0" max="100" value="0">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">負責項目經理 (PM)</label>
+                            <label class="form-label">負責 PM</label>
                             <select name="assigned_pm_id" class="form-select">
                                 <option value="">未分配</option>
                                 <?php foreach ($users as $u): ?>

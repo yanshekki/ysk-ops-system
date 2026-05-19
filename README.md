@@ -1,8 +1,8 @@
 # YSK Ops System v2.0
 
-## Pagination Added
+## Pagination Added (All Pages)
 
-- clients.php 已加入完整 Pagination（每頁 15 筆）
-- 搜尋 + 篩選保留
+- clients.php 已加入 Pagination
+- projects.php 已加入 Pagination
 
 **Status**: Ready to merge
