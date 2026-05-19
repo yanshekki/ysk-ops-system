@@ -1,0 +1,51 @@
+/* css/style.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+:root {
+    --bs-primary: #4f46e5; /* 科技感深藍色 */
+    --bs-primary-rgb: 79, 70, 229;
+    --bs-body-bg: #f8fafc; /* 極淺灰藍底色 */
+    --bs-body-font-family: 'Inter', 'Noto Sans TC', sans-serif;
+}
+
+body {
+    background-color: var(--bs-body-bg);
+    font-family: var(--bs-body-font-family);
+    color: #334155;
+}
+
+/* --- 卡片 (Card) 升級 --- */
+.card {
+    border: none !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* --- 側邊欄 (Sidebar) 升級 --- */
+.sidebar {
+    background: #0f172a !important; /* 深空灰 */
+    box-shadow: 4px 0 10px rgba(0,0,0,0.05);
+}
+.sidebar .nav-link {
+    color: #94a3b8 !important;
+    border-radius: 8px;
+    margin: 4px 8px;
+    padding: 10px 16px;
+    transition: all 0.2s;
+}
+.sidebar .nav-link:hover, .sidebar .nav-link.active {
+    color: #ffffff !important;
+    background: rgba(79, 70, 229, 0.2) !important;
+    border-left: 4px solid var(--bs-primary);
+}
+
+/* --- 按鈕與標籤 (Buttons & Badges) 升級 --- */
+.btn { border-radius: 8px; font-weight: 500; }
+.btn-primary { background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); border: none; }
+.badge { padding: 0.5em 0.8em; border-radius: 6px; font-weight: 500; }

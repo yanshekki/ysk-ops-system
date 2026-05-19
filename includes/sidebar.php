@@ -2,7 +2,7 @@
 // Unified Sidebar Navigation - Complete Version
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
-<div class="sidebar p-3 text-white" style="width:240px;min-height:100vh;background:#212529;flex-shrink:0;" id="sidebar">
+<div class="sidebar p-3 text-white d-flex flex-column" style="width:240px; min-height:100vh; flex-shrink:0; transition: 0.3s;" id="sidebar">
     <div class="d-flex align-items-center mb-4 px-2">
         <i class="bi bi-gear-fill fs-3 me-2 text-primary"></i>
         <span class="fs-4 fw-bold">YSK Ops</span>

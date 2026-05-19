@@ -80,44 +80,8 @@ if (is_logged_in()) {
     ");
 }
 ?>
-<!DOCTYPE html>
-<html lang="zh-HK">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= SITE_NAME ?> | YSK Limited</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        body { background-color: #f8f9fa; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-        .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075); }
-        .stat-card { transition: transform 0.2s; }
-        .stat-card:hover { transform: translateY(-3px); }
-        .service-badge { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
-        .sidebar { min-height: 100vh; background: #212529; }
-        .sidebar .nav-link { color: #adb5bd; }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background: #0d6efd; }
-        .main-content { padding: 2rem; }
-        .table th { background: #f1f3f5; }
-        .global-search { max-width: 600px; margin: 0 auto 2rem; }
-        
-        /* Mobile Optimizations */
-        @media (max-width: 768px) {
-            .sidebar { position: fixed; z-index: 1050; transform: translateX(-100%); transition: transform 0.3s ease; }
-            .sidebar.show { transform: translateX(0); }
-            .main-content { padding: 1rem; }
-            .stat-card h2 { font-size: 1.5rem; }
-            .table-responsive { font-size: 0.9rem; }
-            .btn { padding: 0.5rem 0.75rem; font-size: 0.9rem; }
-            .modal-dialog { margin: 0.5rem; }
-        }
-        .mobile-nav-toggle { display: none; }
-        @media (max-width: 768px) {
-            .mobile-nav-toggle { display: block; position: fixed; top: 15px; left: 15px; z-index: 1060; background: #0d6efd; color: white; border: none; width: 42px; height: 42px; border-radius: 8px; }
-        }
-    </style>
-</head>
-<body>
+<?php $page_title = "客戶管理"; ?>
+<?php include 'includes/header.php'; ?>
 <?php if ($show_login): ?>
     <!-- Login Page -->
     <div class="container d-flex align-items-center justify-content-center min-vh-100">
