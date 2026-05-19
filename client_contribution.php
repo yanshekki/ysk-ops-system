@@ -38,7 +38,7 @@ $total_all_revenue = array_sum(array_column($clients, 'total_revenue'));
         <div class="card mt-3">
             <div class="card-body p-0">
                 <table class="table table-hover mb-0">
-                    <thead class="table-dark">
+                    <thead>
                         <tr>
                             <th>#</th>
                             <th>客戶名稱</th>

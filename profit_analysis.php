@@ -33,7 +33,7 @@ $total_cost = 0;
         <div class="card mt-3">
             <div class="card-body p-0">
                 <table class="table table-hover mb-0">
-                    <thead class="table-dark">
+                    <thead>
                         <tr>
                             <th>項目</th>
                             <th>客戶</th>

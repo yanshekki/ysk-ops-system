@@ -62,7 +62,7 @@ $avg_utilization = count($team) > 0 ? round(($total_hours / (count($team) * 160)
         <div class="card">
             <div class="card-body p-0">
                 <table class="table table-hover mb-0">
-                    <thead class="table-dark">
+                    <thead>
                         <tr>
                             <th>開發者 / PM</th>
                             <th>角色</th>

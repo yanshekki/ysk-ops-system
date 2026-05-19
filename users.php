@@ -153,12 +153,4 @@ $roles = ['admin' => '管理員', 'pm' => '項目經理', 'developer' => '開發
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    sidebar.classList.toggle('show');
-}
-</script>
-</body>
-</html>
+<?php include 'includes/footer.php'; ?>
