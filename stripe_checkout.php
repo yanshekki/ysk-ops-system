@@ -13,15 +13,9 @@ if (!$invoice) {
 
 $client = db_fetch_one("SELECT * FROM clients WHERE id = ?", [$invoice['client_id']]);
 ?>
-<!DOCTYPE html>
-<html lang="zh-HK">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stripe 支付 | <?= SITE_NAME ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://js.stripe.com/v3/"></script>
-</head>
+<?php $page_title = "Stripe 支付"; ?>
+<?php include 'includes/header.php'; ?>
+<script src="https://js.stripe.com/v3/"></script>
 <body class="bg-light">
 <div class="container py-5">
     <div class="row justify-content-center">

@@ -17,16 +17,8 @@ $projects = db_fetch_all("
 $total_revenue = 0;
 $total_cost = 0;
 ?>
-<!DOCTYPE html>
-<html lang="zh-HK">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>收益分析 | <?= SITE_NAME ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-</head>
-<body>
+<?php $page_title = "收益分析"; ?>
+<?php include 'includes/header.php'; ?>
 <div class="d-flex">
     <button class="mobile-nav-toggle btn d-md-none" onclick="toggleSidebar()"><i class="bi bi-list fs-4"></i></button>
     <?php include 'includes/sidebar.php'; ?>

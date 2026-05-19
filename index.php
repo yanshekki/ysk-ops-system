@@ -80,7 +80,7 @@ if (is_logged_in()) {
     ");
 }
 ?>
-<?php $page_title = "客戶管理"; ?>
+<?php $page_title = "儀表板"; ?>
 <?php include 'includes/header.php'; ?>
 <?php if ($show_login): ?>
     <!-- Login Page -->

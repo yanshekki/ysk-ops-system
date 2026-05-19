@@ -8,8 +8,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <span class="fs-4 fw-bold">YSK Ops</span>
     </div>
     
-    <nav class="nav flex-column">
-        <!-- Core -->
+    <nav class="nav flex-column mb-auto">
         <a href="index.php" class="nav-link mb-1 <?= $current_page == 'index.php' ? 'active' : '' ?>">
             <i class="bi bi-speedometer2 me-2"></i> 儀表板
         </a>
@@ -42,7 +41,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
         
         <hr class="border-secondary my-3">
         
-        <!-- Advanced Features -->
         <a href="timesheets.php" class="nav-link mb-1 <?= $current_page == 'timesheets.php' ? 'active' : '' ?>">
             <i class="bi bi-clock-history me-2"></i> 工時記錄
         </a>
@@ -61,7 +59,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
         
         <hr class="border-secondary my-3">
         
-        <!-- Tools -->
         <a href="notifications.php" class="nav-link mb-1 <?= $current_page == 'notifications.php' ? 'active' : '' ?>">
             <i class="bi bi-bell me-2"></i> 通知中心
         </a>
@@ -69,16 +66,24 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <a href="ai_assistant.php" class="nav-link mb-1 <?= $current_page == 'ai_assistant.php' ? 'active' : '' ?>">
             <i class="bi bi-robot me-2"></i> AI 助手
         </a>
+
+        <a href="knowledge_base.php" class="nav-link mb-1 <?= $current_page == 'knowledge_base.php' ? 'active' : '' ?>">
+            <i class="bi bi-book me-2"></i> 知識庫與 SOP
+        </a>
         
         <hr class="border-secondary my-3">
         
+        <a href="client_portal.php" target="_blank" class="nav-link mb-1 text-info">
+            <i class="bi bi-globe me-2"></i> 查看客戶門戶 <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.8rem;"></i>
+        </a>
+
         <a href="logout.php" class="nav-link text-danger">
             <i class="bi bi-box-arrow-right me-2"></i> 登出
         </a>
     </nav>
     
-    <div class="mt-auto px-2 pt-4 small text-muted d-none d-md-block">
+    <div class="mt-auto px-2 pt-4 small text-muted d-none d-md-block border-top border-secondary">
         <div>登入：<?= htmlspecialchars($_SESSION['user']['full_name'] ?? '') ?></div>
-        <div class="text-primary"><?= ucfirst($_SESSION['user']['role'] ?? '') ?></div>
+        <div class="text-primary mt-1"><span class="badge bg-primary text-white"><?= ucfirst($_SESSION['user']['role'] ?? '') ?></span></div>
     </div>
 </div>

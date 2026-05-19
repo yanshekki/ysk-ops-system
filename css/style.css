@@ -2,50 +2,152 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
 
 :root {
-    --bs-primary: #4f46e5; /* 科技感深藍色 */
+    --bs-primary: #4f46e5;       /* YSK 科技感靛藍品牌色 */
     --bs-primary-rgb: 79, 70, 229;
-    --bs-body-bg: #f8fafc; /* 極淺灰藍底色 */
-    --bs-body-font-family: 'Inter', 'Noto Sans TC', sans-serif;
+    --bs-body-bg: #f8fafc;       /* 柔和微藍底色，減少眼睛疲勞 */
+    --bs-body-font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
 }
 
 body {
     background-color: var(--bs-body-bg);
     font-family: var(--bs-body-font-family);
     color: #334155;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* --- 卡片 (Card) 升級 --- */
+/* --- 全局卡片 (Card) 現代化 --- */
 .card {
     border: none !important;
     border-radius: 16px !important;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+    background-color: #ffffff;
+}
+
+/* 儀表板上方統計卡片增強效果 */
+.stat-card {
     transition: transform 0.2s ease-in-out, box-shadow 0.2s;
 }
-
 .stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04) !important;
 }
 
-/* --- 側邊欄 (Sidebar) 升級 --- */
+/* --- 統一表格設計 (Table) --- */
+.table {
+    margin-bottom: 0;
+}
+.table > :not(caption) > * > * {
+    padding: 1rem 1.25rem !important; /* 增加留白感 */
+    border-bottom: 1px solid #f1f5f9 !important;
+    vertical-align: middle;
+}
+/* 統一所有表格標頭為高質感淺灰底、灰字 */
+.table th, .table thead.table-dark th {
+    background-color: #f8fafc !important;
+    color: #64748b !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e2e8f0 !important;
+}
+.table-hover tbody tr:hover {
+    background-color: #f1f5f9 !important;
+}
+
+/* --- 側邊欄 (Sidebar) 頂級 SaaS 質感 --- */
 .sidebar {
-    background: #0f172a !important; /* 深空灰 */
-    box-shadow: 4px 0 10px rgba(0,0,0,0.05);
+    background: #0f172a !important; /* 深色高階 Slate 藍黑 */
+    border-right: 1px solid #1e293b;
 }
 .sidebar .nav-link {
     color: #94a3b8 !important;
     border-radius: 8px;
-    margin: 4px 8px;
-    padding: 10px 16px;
-    transition: all 0.2s;
+    margin: 4px 12px;
+    padding: 11px 16px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: d-flex;
+    align-items: center;
 }
-.sidebar .nav-link:hover, .sidebar .nav-link.active {
+.sidebar .nav-link i {
+    font-size: 1.1rem;
+}
+.sidebar .nav-link:hover {
+    color: #f8fafc !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+.sidebar .nav-link.active {
     color: #ffffff !important;
-    background: rgba(79, 70, 229, 0.2) !important;
-    border-left: 4px solid var(--bs-primary);
+    background: var(--bs-primary) !important;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
-/* --- 按鈕與標籤 (Buttons & Badges) 升級 --- */
-.btn { border-radius: 8px; font-weight: 500; }
-.btn-primary { background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); border: none; }
-.badge { padding: 0.5em 0.8em; border-radius: 6px; font-weight: 500; }
+/* --- 按鈕與輸入框表單優化 --- */
+.btn {
+    border-radius: 8px !important;
+    padding: 0.5rem 1.25rem;
+    font-weight: 500;
+}
+.btn-primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+    border: none !important;
+}
+.form-control, .form-select {
+    border-radius: 8px !important;
+    border: 1px solid #cbd5e1;
+    padding: 0.6rem 1rem;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #a5b4fc;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+/* --- 軟色調標籤 (Soft Badges) --- */
+.badge {
+    padding: 0.5em 0.8em !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+}
+.bg-success { background-color: #dcfce7 !important; color: #15803d !important; }
+.bg-warning { background-color: #fef9c3 !important; color: #a16207 !important; }
+.bg-danger { background-color: #fee2e2 !important; color: #b91c1c !important; }
+.bg-primary { background-color: #e0e7ff !important; color: #4338ca !important; }
+.bg-info { background-color: #ecfeff !important; color: #0369a1 !important; }
+
+/* --- 專門為 index.php 全域搜尋而設 --- */
+.global-search {
+    max-width: 600px;
+    margin: 0 auto 2rem;
+}
+
+/* --- ⚡ RWD 流動端絕對統一排版 (原寫死在 index.php) --- */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed !important;
+        z-index: 1050;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    .main-content {
+        padding: 1rem !important;
+    }
+    .mobile-nav-toggle {
+        display: block !important;
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 1060;
+        background: var(--bs-primary) !important;
+        color: white !important;
+        border: none;
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+}
+.mobile-nav-toggle { display: none; }

@@ -104,7 +104,7 @@ $service_options = [
     'other' => '其他服務'
 ];
 ?>
-<?php $page_title = "客戶管理"; ?>
+<?php $page_title = "項目管理"; ?>
 <?php include 'includes/header.php'; ?>
 <div class="d-flex">
     <!-- Mobile Menu Toggle -->
