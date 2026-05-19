@@ -5,6 +5,11 @@ require_once 'includes/auth.php';
 require_login();
 
 $success = $error = '';
+$search = $_GET['search'] ?? '';
+$status_filter = $_GET['status'] ?? '';
+$page = max(1, (int)($_GET['page'] ?? 1));
+$per_page = 15;
+$offset = ($page - 1) * $per_page;
 
 // Handle create invoice
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_invoice'])) {
@@ -25,14 +30,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_invoice'])) {
     $success = '發票已新增！';
 }
 
-// Fetch invoices
-$invoices = db_fetch_all("
-    SELECT i.*, c.company_name, p.title as project_title 
-    FROM invoices i 
-    LEFT JOIN clients c ON i.client_id = c.id 
-    LEFT JOIN projects p ON i.project_id = p.id 
-    ORDER BY i.issue_date DESC
-");
+// Build query for count
+$count_sql = "SELECT COUNT(*) as total FROM invoices WHERE 1=1";
+$count_params = [];
+
+if ($search) {
+    $count_sql .= " AND (invoice_number LIKE ? OR (SELECT company_name FROM clients WHERE id = invoices.client_id) LIKE ? OR (SELECT title FROM projects WHERE id = invoices.project_id) LIKE ?)";
+    $count_params[] = "%$search%";
+    $count_params[] = "%$search%";
+    $count_params[] = "%$search%";
+}
+
+if ($status_filter) {
+    $count_sql .= " AND status = ?";
+    $count_params[] = $status_filter;
+}
+
+total = db_fetch_one($count_sql, $count_params)['total'] ?? 0;
+$total_pages = ceil($total / $per_page);
+
+// Fetch invoices with pagination
+$sql = "SELECT i.*, c.company_name, p.title as project_title FROM invoices i LEFT JOIN clients c ON i.client_id = c.id LEFT JOIN projects p ON i.project_id = p.id WHERE 1=1";
+$params = [];
+
+if ($search) {
+    $sql .= " AND (i.invoice_number LIKE ? OR c.company_name LIKE ? OR p.title LIKE ?)";
+    $params[] = "%$search%";
+    $params[] = "%$search%";
+    $params[] = "%$search%";
+}
+
+if ($status_filter) {
+    $sql .= " AND i.status = ?";
+    $params[] = $status_filter;
+}
+
+$sql .= " ORDER BY i.issue_date DESC LIMIT $per_page OFFSET $offset";
+$invoices = db_fetch_all($sql, $params);
 
 $clients = db_fetch_all("SELECT id, company_name FROM clients ORDER BY company_name");
 $projects = db_fetch_all("SELECT id, title FROM projects ORDER BY title");
@@ -68,6 +102,34 @@ $projects = db_fetch_all("SELECT id, title FROM projects ORDER BY title");
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createInvoiceModal">
                 <i class="bi bi-plus-circle me-1"></i> 新增發票
             </button>
+        </div>
+        
+        <!-- Search and Filter -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <form method="GET" class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">搜尋</label>
+                        <input type="text" name="search" class="form-control" value="<?= htmlspecialchars($search) ?>" placeholder="發票號 / 客戶 / 項目">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">狀態</label>
+                        <select name="status" class="form-select">
+                            <option value="">全部</option>
+                            <option value="draft" <?= $status_filter=='draft'?'selected':'' ?>>草稿</option>
+                            <option value="sent" <?= $status_filter=='sent'?'selected':'' ?>>已發送</option>
+                            <option value="paid" <?= $status_filter=='paid'?'selected':'' ?>>已付款</option>
+                            <option value="overdue" <?= $status_filter=='overdue'?'selected':'' ?>>已過期</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-outline-primary w-100 mt-4">搜尋</button>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <a href="invoices.php" class="btn btn-outline-secondary mt-4">清除</a>
+                    </div>
+                </form>
+            </div>
         </div>
         
         <?php if ($success): ?><div class="alert alert-success"><?= $success ?></div><?php endif; ?>
@@ -115,6 +177,27 @@ $projects = db_fetch_all("SELECT id, title FROM projects ORDER BY title");
                 </table>
             </div>
         </div>
+        
+        <!-- Pagination -->
+        <?php if ($total_pages > 1): ?>
+        <div class="d-flex justify-content-center mt-3">
+            <nav>
+                <ul class="pagination">
+                    <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?page=<?= $page-1 ?>&search=<?= urlencode($search) ?>&status=<?= $status_filter ?>">上一頁</a>
+                    </li>
+                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                    <li class="page-item <?= $i == $page ? 'active' : '' ?>">
+                        <a class="page-link" href="?page=<?= $i ?>&search=<?= urlencode($search) ?>&status=<?= $status_filter ?>"><?= $i ?></a>
+                    </li>
+                    <?php endfor; ?>
+                    <li class="page-item <?= $page >= $total_pages ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?page=<?= $page+1 ?>&search=<?= urlencode($search) ?>&status=<?= $status_filter ?>">下一頁</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 
