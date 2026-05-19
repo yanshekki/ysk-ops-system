@@ -27,7 +27,6 @@ if (is_logged_in()) {
     $global_results = [];
     
     if ($global_search) {
-        // Search clients
         $global_results['clients'] = db_fetch_all(
             "SELECT id, company_name, contact_person, email FROM clients 
              WHERE company_name LIKE ? OR contact_person LIKE ? OR email LIKE ? 
@@ -35,7 +34,6 @@ if (is_logged_in()) {
             ["%$global_search%", "%$global_search%", "%$global_search%"]
         );
         
-        // Search projects
         $global_results['projects'] = db_fetch_all(
             "SELECT p.id, p.title, p.status, c.company_name 
              FROM projects p 
@@ -45,7 +43,6 @@ if (is_logged_in()) {
             ["%$global_search%", "%$global_search%", "%$global_search%"]
         );
         
-        // Search invoices
         $global_results['invoices'] = db_fetch_all(
             "SELECT i.id, i.invoice_number, i.total_amount, i.status, c.company_name 
              FROM invoices i 
@@ -103,6 +100,21 @@ if (is_logged_in()) {
         .main-content { padding: 2rem; }
         .table th { background: #f1f3f5; }
         .global-search { max-width: 600px; margin: 0 auto 2rem; }
+        
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; z-index: 1050; transform: translateX(-100%); transition: transform 0.3s ease; }
+            .sidebar.show { transform: translateX(0); }
+            .main-content { padding: 1rem; }
+            .stat-card h2 { font-size: 1.5rem; }
+            .table-responsive { font-size: 0.9rem; }
+            .btn { padding: 0.5rem 0.75rem; font-size: 0.9rem; }
+            .modal-dialog { margin: 0.5rem; }
+        }
+        .mobile-nav-toggle { display: none; }
+        @media (max-width: 768px) {
+            .mobile-nav-toggle { display: block; position: fixed; top: 15px; left: 15px; z-index: 1060; background: #0d6efd; color: white; border: none; width: 42px; height: 42px; border-radius: 8px; }
+        }
     </style>
 </head>
 <body>
@@ -143,45 +155,23 @@ if (is_logged_in()) {
 <?php else: ?>
     <!-- Dashboard -->
     <div class="d-flex">
-        <!-- Sidebar -->
-        <div class="sidebar p-3 text-white" style="width: 240px; flex-shrink: 0;">
-            <div class="d-flex align-items-center mb-4 px-2">
-                <i class="bi bi-gear-fill fs-3 me-2 text-primary"></i>
-                <span class="fs-4 fw-bold">YSK Ops</span>
-            </div>
-            
-            <nav class="nav flex-column">
-                <a href="index.php" class="nav-link active mb-1"><i class="bi bi-speedometer2 me-2"></i> 儀表板</a>
-                <a href="users.php" class="nav-link mb-1"><i class="bi bi-people-fill me-2"></i> 用戶管理</a>
-                <a href="clients.php" class="nav-link mb-1"><i class="bi bi-people me-2"></i> 客戶管理</a>
-                <a href="projects.php" class="nav-link mb-1"><i class="bi bi-folder me-2"></i> 項目管理</a>
-                <a href="tasks.php" class="nav-link mb-1"><i class="bi bi-list-task me-2"></i> 任務追蹤</a>
-                <a href="invoices.php" class="nav-link mb-1"><i class="bi bi-receipt me-2"></i> 發票管理</a>
-                
-                <hr class="border-secondary my-3">
-                
-                <?php if (has_role('admin')): ?>
-                <a href="#" class="nav-link mb-1"><i class="bi bi-gear me-2"></i> 系統設定</a>
-                <?php endif; ?>
-                
-                <a href="logout.php" class="nav-link text-danger mt-auto"><i class="bi bi-box-arrow-right me-2"></i> 登出</a>
-            </nav>
-            
-            <div class="mt-auto px-2 pt-4 small text-muted">
-                <div>登入：<?= htmlspecialchars($user['full_name']) ?></div>
-                <div class="text-primary"><?= ucfirst($user['role']) ?></div>
-            </div>
-        </div>
+        <!-- Mobile Menu Toggle -->
+        <button class="mobile-nav-toggle btn d-md-none" onclick="toggleSidebar()">
+            <i class="bi bi-list fs-4"></i>
+        </button>
+        
+        <!-- Unified Sidebar -->
+        <?php include 'includes/sidebar.php'; ?>
         
         <!-- Main Content -->
         <div class="flex-grow-1 main-content">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h1 class="h3 mb-1">歡迎回來，<?= htmlspecialchars(explode(' ', $user['full_name'])[0]) ?>!</h1>
-                    <p class="text-muted mb-0">今天是 <?= date('Y年m月d日 l') ?> • YSK Limited 內部系統</p>
+                    <p class="text-muted mb-0 d-none d-md-block">今天是 <?= date('Y年m月d日 l') ?> • YSK Limited 內部系統</p>
                 </div>
-                <div>
-                    <a href="projects.php?action=new" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i> 新增項目</a>
+                <div class="d-flex gap-2">
+                    <a href="projects.php?action=new" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i> <span class="d-none d-md-inline">新增項目</span></a>
                 </div>
             </div>
             
@@ -206,9 +196,8 @@ if (is_logged_in()) {
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <!-- Clients Results -->
                         <?php if (!empty($global_results['clients'])): ?>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-12 col-md-4 mb-3">
                             <h6 class="text-primary"><i class="bi bi-people me-2"></i>客戶 (<?= count($global_results['clients']) ?>)</h6>
                             <div class="list-group">
                                 <?php foreach ($global_results['clients'] as $c): ?>
@@ -221,9 +210,8 @@ if (is_logged_in()) {
                         </div>
                         <?php endif; ?>
                         
-                        <!-- Projects Results -->
                         <?php if (!empty($global_results['projects'])): ?>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-12 col-md-4 mb-3">
                             <h6 class="text-success"><i class="bi bi-folder me-2"></i>項目 (<?= count($global_results['projects']) ?>)</h6>
                             <div class="list-group">
                                 <?php foreach ($global_results['projects'] as $p): ?>
@@ -236,9 +224,8 @@ if (is_logged_in()) {
                         </div>
                         <?php endif; ?>
                         
-                        <!-- Invoices Results -->
                         <?php if (!empty($global_results['invoices'])): ?>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-12 col-md-4 mb-3">
                             <h6 class="text-info"><i class="bi bi-receipt me-2"></i>發票 (<?= count($global_results['invoices']) ?>)</h6>
                             <div class="list-group">
                                 <?php foreach ($global_results['invoices'] as $inv): ?>
@@ -266,7 +253,7 @@ if (is_logged_in()) {
             
             <!-- Stats Cards -->
             <div class="row g-3 mb-4">
-                <div class="col-md-3">
+                <div class="col-6 col-md-3">
                     <div class="card stat-card h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
@@ -279,7 +266,7 @@ if (is_logged_in()) {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-6 col-md-3">
                     <div class="card stat-card h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
@@ -292,7 +279,7 @@ if (is_logged_in()) {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-6 col-md-3">
                     <div class="card stat-card h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
@@ -305,7 +292,7 @@ if (is_logged_in()) {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-6 col-md-3">
                     <div class="card stat-card h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
@@ -330,53 +317,55 @@ if (is_logged_in()) {
                             <a href="projects.php" class="btn btn-sm btn-outline-primary">查看全部</a>
                         </div>
                         <div class="card-body p-0">
-                            <table class="table table-hover mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>項目</th>
-                                        <th>客戶</th>
-                                        <th>服務</th>
-                                        <th>進度</th>
-                                        <th>狀態</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($recent_projects as $p): 
-                                        $service_labels = [
-                                            'ai_automation' => ['AI 自動化', 'primary'],
-                                            'app_development' => ['App 開發', 'success'],
-                                            'cloud_security' => ['雲端安全', 'info'],
-                                            'web3_blockchain' => ['Web3 區塊鏈', 'warning'],
-                                            'other' => ['其他', 'secondary']
-                                        ];
-                                        $svc = $service_labels[$p['service_type']] ?? ['其他', 'secondary'];
-                                    ?>
-                                    <tr onclick="window.location='projects.php?id=<?= $p['id'] ?>'" style="cursor:pointer">
-                                        <td><strong><?= htmlspecialchars($p['title']) ?></strong></td>
-                                        <td><?= htmlspecialchars($p['company_name']) ?></td>
-                                        <td><span class="badge bg-<?= $svc[1] ?> service-badge"><?= $svc[0] ?></span></td>
-                                        <td>
-                                            <div class="progress" style="height: 6px;">
-                                                <div class="progress-bar bg-success" style="width: <?= $p['progress_percent'] ?>%"></div>
-                                            </div>
-                                            <small><?= $p['progress_percent'] ?>%</small>
-                                        </td>
-                                        <td>
-                                            <?php 
-                                            $status_badges = [
-                                                'planning' => 'secondary', 'in_progress' => 'primary', 
-                                                'review' => 'info', 'completed' => 'success', 
-                                                'on_hold' => 'warning', 'cancelled' => 'danger'
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>項目</th>
+                                            <th class="d-none d-md-table-cell">客戶</th>
+                                            <th>服務</th>
+                                            <th>進度</th>
+                                            <th>狀態</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($recent_projects as $p): 
+                                            $service_labels = [
+                                                'ai_automation' => ['AI 自動化', 'primary'],
+                                                'app_development' => ['App 開發', 'success'],
+                                                'cloud_security' => ['雲端安全', 'info'],
+                                                'web3_blockchain' => ['Web3 區塊鏈', 'warning'],
+                                                'other' => ['其他', 'secondary']
                                             ];
-                                            ?>
-                                            <span class="badge bg-<?= $status_badges[$p['status']] ?? 'secondary' ?>">
-                                                <?= ucfirst(str_replace('_', ' ', $p['status'])) ?>
-                                            </span>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
+                                            $svc = $service_labels[$p['service_type']] ?? ['其他', 'secondary'];
+                                        ?>
+                                        <tr onclick="window.location='projects.php?id=<?= $p['id'] ?>'" style="cursor:pointer">
+                                            <td><strong><?= htmlspecialchars($p['title']) ?></strong></td>
+                                            <td class="d-none d-md-table-cell"><?= htmlspecialchars($p['company_name']) ?></td>
+                                            <td><span class="badge bg-<?= $svc[1] ?> service-badge"><?= $svc[0] ?></span></td>
+                                            <td>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar bg-success" style="width: <?= $p['progress_percent'] ?>%"></div>
+                                                </div>
+                                                <small><?= $p['progress_percent'] ?>%</small>
+                                            </td>
+                                            <td>
+                                                <?php 
+                                                $status_badges = [
+                                                    'planning' => 'secondary', 'in_progress' => 'primary', 
+                                                    'review' => 'info', 'completed' => 'success', 
+                                                    'on_hold' => 'warning', 'cancelled' => 'danger'
+                                                ];
+                                                ?>
+                                                <span class="badge bg-<?= $status_badges[$p['status']] ?? 'secondary' ?>">
+                                                    <?= ucfirst(str_replace('_', ' ', $p['status'])) ?>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -423,5 +412,23 @@ if (is_logged_in()) {
 <?php endif; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Mobile sidebar toggle
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('show');
+}
+
+// Close sidebar when clicking outside on mobile
+document.addEventListener('click', function(e) {
+    const sidebar = document.getElementById('sidebar');
+    const toggle = document.querySelector('.mobile-nav-toggle');
+    if (window.innerWidth <= 768 && sidebar.classList.contains('show')) {
+        if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+            sidebar.classList.remove('show');
+        }
+    }
+});
+</script>
 </body>
 </html>
