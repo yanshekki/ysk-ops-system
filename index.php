@@ -59,18 +59,15 @@ if (is_logged_in()) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         body { background-color: #f8f9fa; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-        .navbar-brand { font-weight: 700; color: #0d6efd !important; }
         .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075); }
         .stat-card { transition: transform 0.2s; }
         .stat-card:hover { transform: translateY(-3px); }
         .service-badge { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
-        .nav-link.active { font-weight: 600; color: #0d6efd !important; }
         .sidebar { min-height: 100vh; background: #212529; }
         .sidebar .nav-link { color: #adb5bd; }
         .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background: #0d6efd; }
         .main-content { padding: 2rem; }
         .table th { background: #f1f3f5; }
-        .modal-header { background: #0d6efd; color: white; }
     </style>
 </head>
 <body>
@@ -120,6 +117,7 @@ if (is_logged_in()) {
             
             <nav class="nav flex-column">
                 <a href="index.php" class="nav-link active mb-1"><i class="bi bi-speedometer2 me-2"></i> 儀表板</a>
+                <a href="users.php" class="nav-link mb-1"><i class="bi bi-people-fill me-2"></i> 用戶管理</a>
                 <a href="clients.php" class="nav-link mb-1"><i class="bi bi-people me-2"></i> 客戶管理</a>
                 <a href="projects.php" class="nav-link mb-1"><i class="bi bi-folder me-2"></i> 項目管理</a>
                 <a href="tasks.php" class="nav-link mb-1"><i class="bi bi-list-task me-2"></i> 任務追蹤</a>
@@ -129,7 +127,6 @@ if (is_logged_in()) {
                 
                 <?php if (has_role('admin')): ?>
                 <a href="#" class="nav-link mb-1"><i class="bi bi-gear me-2"></i> 系統設定</a>
-                <a href="#" class="nav-link mb-1"><i class="bi bi-people-fill me-2"></i> 用戶管理</a>
                 <?php endif; ?>
                 
                 <a href="logout.php" class="nav-link text-danger mt-auto"><i class="bi bi-box-arrow-right me-2"></i> 登出</a>
