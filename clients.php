@@ -56,7 +56,7 @@ if ($status_filter) {
     $count_params[] = $status_filter;
 }
 
-total = db_fetch_one($count_sql, $count_params)['total'] ?? 0;
+$total = db_fetch_one($count_sql, $count_params)['total'] ?? 0;
 $total_pages = ceil($total / $per_page);
 
 // Fetch clients with pagination
