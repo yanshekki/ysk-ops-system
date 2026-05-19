@@ -1,10 +1,11 @@
--- YSK Operations System Database Schema
--- Run this in your MySQL to create the database and tables
+-- YSK Ops System v2.0 Database Schema
+-- 完整 schema 涵蓋所有已實現功能 + FULLTEXT INDEX 提升搜尋效能
+-- Run this in phpMyAdmin or MySQL to create the database
 
 CREATE DATABASE IF NOT EXISTS ysk_ops CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE ysk_ops;
 
--- Users table (team members + admins)
+-- 1. Users (team members)
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
@@ -19,7 +20,7 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Clients table
+-- 2. Clients
 CREATE TABLE clients (
     id INT AUTO_INCREMENT PRIMARY KEY,
     company_name VARCHAR(150) NOT NULL,
@@ -30,10 +31,11 @@ CREATE TABLE clients (
     notes TEXT,
     status ENUM('active', 'inactive', 'lead') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FULLTEXT KEY ft_clients (company_name, contact_person, email, notes)
 );
 
--- Projects table (linked to services)
+-- 3. Projects
 CREATE TABLE projects (
     id INT AUTO_INCREMENT PRIMARY KEY,
     client_id INT NOT NULL,
@@ -51,10 +53,11 @@ CREATE TABLE projects (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
     FOREIGN KEY (assigned_pm_id) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    FULLTEXT KEY ft_projects (title, description)
 );
 
--- Tasks table
+-- 4. Tasks
 CREATE TABLE tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
     project_id INT NOT NULL,
@@ -72,7 +75,7 @@ CREATE TABLE tasks (
     FOREIGN KEY (assigned_to_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- Invoices table
+-- 5. Invoices
 CREATE TABLE invoices (
     id INT AUTO_INCREMENT PRIMARY KEY,
     invoice_number VARCHAR(50) UNIQUE NOT NULL,
@@ -85,7 +88,6 @@ CREATE TABLE invoices (
     total_amount DECIMAL(12,2) DEFAULT 0,
     status ENUM('draft', 'sent', 'paid', 'overdue', 'cancelled') DEFAULT 'draft',
     notes TEXT,
-    pdf_path VARCHAR(255),
     created_by INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -94,18 +96,7 @@ CREATE TABLE invoices (
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- Invoice items (line items)
-CREATE TABLE invoice_items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    invoice_id INT NOT NULL,
-    description VARCHAR(255) NOT NULL,
-    quantity DECIMAL(10,2) DEFAULT 1,
-    unit_price DECIMAL(12,2) NOT NULL,
-    amount DECIMAL(12,2) NOT NULL,
-    FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
-);
-
--- Timesheets (for billing & tracking)
+-- 6. Timesheets
 CREATE TABLE timesheets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -123,35 +114,54 @@ CREATE TABLE timesheets (
     FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- Activity log (optional audit)
-CREATE TABLE activity_log (
+-- 7. Knowledge Base
+CREATE TABLE knowledge_base (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    action VARCHAR(100) NOT NULL,
-    table_name VARCHAR(50),
-    record_id INT,
-    details TEXT,
-    ip_address VARCHAR(45),
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    category ENUM('sop', 'technical', 'client', 'other') DEFAULT 'other',
+    created_by INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    FULLTEXT KEY ft_knowledge (title, content)
 );
 
--- Insert default admin user (password: admin123 - CHANGE IMMEDIATELY!)
+-- 8. Notifications
+CREATE TABLE notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    client_id INT,
+    type ENUM('whatsapp', 'email') DEFAULT 'whatsapp',
+    message TEXT NOT NULL,
+    sent_by INT,
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+    FOREIGN KEY (sent_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- 9. Recurring Invoices
+CREATE TABLE recurring_invoices (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    client_id INT NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    frequency ENUM('monthly', 'quarterly', 'yearly') DEFAULT 'monthly',
+    is_active BOOLEAN DEFAULT TRUE,
+    last_generated DATE,
+    next_generate DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+);
+
+-- Insert default admin (password: admin123 - CHANGE IMMEDIATELY!)
 INSERT INTO users (username, password_hash, full_name, email, role) VALUES 
 ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'YSK Admin', 'admin@ysk.hk', 'admin');
 
--- Sample data for testing (optional - remove in production)
+-- Sample data for testing
 INSERT INTO clients (company_name, contact_person, email, phone, status) VALUES 
 ('Demo Logistics Ltd', '陳先生', 'demo@logistics.hk', '+852 2345 6789', 'active'),
 ('Retail Brand HK', '李小姐', 'contact@retailbrand.hk', '+852 9876 5432', 'active');
 
 INSERT INTO projects (client_id, title, description, service_type, status, start_date, end_date, budget, progress_percent, assigned_pm_id, created_by) VALUES 
-(1, '物流ERP系統開發', '開發司橛APP及後台ERP', 'app_development', 'in_progress', '2026-01-15', '2026-06-30', 85000.00, 45, 1, 1),
-(2, '私有LLM合約審閱系統', '法律合約AI自動化', 'ai_automation', 'planning', '2026-05-01', '2026-08-15', 120000.00, 10, 1, 1);
+(1, '物流ERP系統開發', '開發司橫APP及後台ERP', 'app_development', 'in_progress', '2026-01-15', '2026-06-30', 85000.00, 45, 1, 1);
 
 INSERT INTO tasks (project_id, title, description, assigned_to_id, status, priority, due_date, estimated_hours) VALUES 
-(1, '需求分析會議', '與客戶討論ERP流程', 1, 'done', 'high', '2026-01-20', 8),
-(1, '資料庫設計', '設計MySQL schema', 1, 'in_progress', 'high', '2026-02-10', 16),
-(2, '資料集準備', '整理法律合約PDF', 1, 'todo', 'medium', '2026-05-10', 20);
-
--- Note: Change default password after first login!
+(1, '需求分析會議', '與客戶討論ERP流程', 1, 'done', 'high', '2026-01-20', 8);

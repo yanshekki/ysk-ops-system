@@ -1,63 +1,35 @@
 <?php
-// Stripe Webhook Handler - Complete Version v2.0
-// This endpoint receives events from Stripe and updates invoice status automatically
-
+// stripe_webhook.php - Final Version (Recommended)
 require_once 'config.php';
 require_once 'includes/db.php';
 
-// TODO: Replace with your actual Stripe keys from Dashboard
-$stripe_secret_key = 'sk_test_YOUR_SECRET_KEY_HERE';
-$endpoint_secret = 'whsec_YOUR_WEBHOOK_SECRET_HERE';
+// 如果你用 Composer 安裝了 stripe/stripe-php
+require_once __DIR__ . '/vendor/autoload.php';
 
 $payload = @file_get_contents('php://input');
 $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
+$endpoint_secret = STRIPE_WEBHOOK_SECRET;
 
 try {
-    if (empty($sig_header)) {
-        http_response_code(400);
-        die('No signature header');
-    }
-
-    $event = json_decode($payload, true);
-
-    if (!$event || !isset($event['type'])) {
-        http_response_code(400);
-        die('Invalid payload');
-    }
-
-    error_log('Stripe Webhook: ' . $event['type']);
-
-    switch ($event['type']) {
-        case 'payment_intent.succeeded':
-            $payment_intent = $event['data']['object'];
-            $invoice_id = $payment_intent['metadata']['invoice_id'] ?? null;
-
-            if ($invoice_id) {
-                db_query("UPDATE invoices SET status = 'paid', updated_at = NOW() WHERE id = ?", [$invoice_id]);
-                error_log("Invoice #{$invoice_id} marked as PAID");
-            }
-            break;
-
-        case 'payment_intent.payment_failed':
-            $payment_intent = $event['data']['object'];
-            $invoice_id = $payment_intent['metadata']['invoice_id'] ?? null;
-
-            if ($invoice_id) {
-                db_query("UPDATE invoices SET status = 'overdue', updated_at = NOW() WHERE id = ?", [$invoice_id]);
-                error_log("Invoice #{$invoice_id} payment failed");
-            }
-            break;
-
-        default:
-            error_log('Unhandled event: ' . $event['type']);
-    }
-
-    http_response_code(200);
-    echo json_encode(['status' => 'success']);
-
-} catch (Exception $e) {
-    error_log('Stripe Webhook Error: ' . $e->getMessage());
+    $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
+} catch (\UnexpectedValueException $e) {
     http_response_code(400);
-    echo json_encode(['error' => $e->getMessage()]);
+    exit('Invalid payload');
+} catch (\Stripe\Exception\SignatureVerificationException $e) {
+    http_response_code(400);
+    exit('Invalid signature');
 }
-?>
+
+// 只處理 payment_intent.succeeded
+if ($event->type === 'payment_intent.succeeded') {
+    $paymentIntent = $event->data->object;
+    $invoice_id = $paymentIntent->metadata->invoice_id ?? null;
+
+    if ($invoice_id) {
+        db_update('invoices', ['status' => 'paid'], 'id = ?', [$invoice_id]);
+        error_log("Invoice #{$invoice_id} marked as PAID via Stripe");
+    }
+}
+
+http_response_code(200);
+echo json_encode(['status' => 'success']);
