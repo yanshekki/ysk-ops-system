@@ -64,17 +64,13 @@ $status_labels = ['todo'=>'待辦','in_progress'=>'進行中','review'=>'審核'
 </head>
 <body>
 <div class="d-flex">
-    <div class="sidebar p-3 text-white" style="width:240px;min-height:100vh;background:#212529;flex-shrink:0;">
-        <div class="d-flex align-items-center mb-4 px-2"><i class="bi bi-gear-fill fs-3 me-2 text-primary"></i><span class="fs-4 fw-bold">YSK Ops</span></div>
-        <nav class="nav flex-column">
-            <a href="index.php" class="nav-link mb-1"><i class="bi bi-speedometer2 me-2"></i> 儀表板</a>
-            <a href="clients.php" class="nav-link mb-1"><i class="bi bi-people me-2"></i> 客戶管理</a>
-            <a href="projects.php" class="nav-link mb-1"><i class="bi bi-folder me-2"></i> 項目管理</a>
-            <a href="tasks.php" class="nav-link active mb-1"><i class="bi bi-list-task me-2"></i> 任務追蹤</a>
-            <a href="invoices.php" class="nav-link mb-1"><i class="bi bi-receipt me-2"></i> 發票管理</a>
-            <hr class="border-secondary my-3"><a href="logout.php" class="nav-link text-danger"><i class="bi bi-box-arrow-right me-2"></i> 登出</a>
-        </nav>
-    </div>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-nav-toggle btn d-md-none" onclick="toggleSidebar()">
+        <i class="bi bi-list fs-4"></i>
+    </button>
+    
+    <!-- Unified Sidebar -->
+    <?php include 'includes/sidebar.php'; ?>
     
     <div class="flex-grow-1 p-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -203,5 +199,11 @@ $status_labels = ['todo'=>'待辦','in_progress'=>'進行中','review'=>'審核'
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('show');
+}
+</script>
 </body>
 </html>
