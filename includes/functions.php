@@ -1,7 +1,7 @@
 <?php
 /**
- * YSK Ops System - 全域核心工具函式庫
- * 職責：集中存放全域公共邏輯，與 config.php 徹底解耦
+ * YSK Ops System 全域核心工具函式庫
+ * 抽離自舊版 config.php，優化架構與維護性
  */
 
 /**
@@ -41,4 +41,31 @@ function get_invoice_status_badge(string $status): array {
         'cancelled' => ['label' => '已取消', 'color' => 'dark']
     ];
     return $map[$status] ?? ['label' => strtoupper($status), 'color' => 'secondary'];
+}
+
+/**
+ * 統一專案進度狀態的 Badge 樣式映射
+ */
+function get_project_status_badge(string $status): array {
+    $map = [
+        'planning'    => ['label' => '規劃中', 'color' => 'secondary'],
+        'in_progress' => ['label' => '進行中', 'color' => 'primary'],
+        'review'      => ['label' => '審核中', 'color' => 'info'],
+        'completed'   => ['label' => '已完成', 'color' => 'success'],
+        'on_hold'     => ['label' => '暫停', 'color' => 'warning'],
+        'cancelled'   => ['label' => '已取消', 'color' => 'danger']
+    ];
+    return $map[$status] ?? ['label' => strtoupper($status), 'color' => 'secondary'];
+}
+
+/**
+ * 獲取當前登入用戶的完整 Session 資料
+ */
+function current_user() {
+    return $_SESSION['user'] ?? [
+        'id' => 0,
+        'username' => 'guest',
+        'full_name' => '訪客',
+        'role' => 'viewer'
+    ];
 }
