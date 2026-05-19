@@ -1,10 +1,10 @@
 /* css/style.css */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap');
 
 :root {
-    --bs-primary: #4f46e5;       /* YSK 科技感靛藍品牌色 */
+    --bs-primary: #4f46e5;       /* YSK 品牌深靛藍 */
     --bs-primary-rgb: 79, 70, 229;
-    --bs-body-bg: #f8fafc;       /* 柔和微藍底色，減少眼睛疲勞 */
+    --bs-body-bg: #f8fafc;       /* 乾淨嘅淺灰藍底色 */
     --bs-body-font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
 }
 
@@ -15,7 +15,19 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* --- 全局卡片 (Card) 現代化 --- */
+/* =========================================
+   1. 自訂高級文字與色彩 (解決 Bootstrap 冇嘅顏色)
+   ========================================= */
+.text-slate-400 { color: #94a3b8 !important; } /* 新增：更淡的次要文字 */
+.text-slate-500 { color: #64748b !important; } /* 新增：適合做小標題的灰 */
+.text-slate-700 { color: #334155 !important; }
+.text-slate-800 { color: #1e293b !important; }
+.text-indigo { color: #4f46e5 !important; }
+.opacity-10 { opacity: 0.1 !important; }
+
+/* =========================================
+   2. 卡片 (Cards) - 懸浮感與柔和陰影
+   ========================================= */
 .card {
     border: none !important;
     border-radius: 16px !important;
@@ -23,41 +35,19 @@ body {
     background-color: #ffffff;
 }
 
-/* 儀表板上方統計卡片增強效果 */
 .stat-card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04) !important;
+    transform: translateY(-6px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
 }
 
-/* --- 統一表格設計 (Table) --- */
-.table {
-    margin-bottom: 0;
-}
-.table > :not(caption) > * > * {
-    padding: 1rem 1.25rem !important; /* 增加留白感 */
-    border-bottom: 1px solid #f1f5f9 !important;
-    vertical-align: middle;
-}
-/* 統一所有表格標頭為高質感淺灰底、灰字 */
-.table th, .table thead.table-dark th {
-    background-color: #f8fafc !important;
-    color: #64748b !important;
-    font-weight: 600 !important;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    letter-spacing: 0.05em;
-    border-bottom: 2px solid #e2e8f0 !important;
-}
-.table-hover tbody tr:hover {
-    background-color: #f1f5f9 !important;
-}
-
-/* --- 側邊欄 (Sidebar) 頂級 SaaS 質感 --- */
+/* =========================================
+   3. 側邊欄 (Sidebar) - 深色質感
+   ========================================= */
 .sidebar {
-    background: #0f172a !important; /* 深色高階 Slate 藍黑 */
+    background: #0f172a !important;
     border-right: 1px solid #1e293b;
 }
 .sidebar .nav-link {
@@ -67,12 +57,10 @@ body {
     padding: 11px 16px;
     font-weight: 500;
     transition: all 0.2s ease;
-    display: d-flex;
+    display: flex;
     align-items: center;
 }
-.sidebar .nav-link i {
-    font-size: 1.1rem;
-}
+.sidebar .nav-link i { font-size: 1.1rem; }
 .sidebar .nav-link:hover {
     color: #f8fafc !important;
     background: rgba(255, 255, 255, 0.05) !important;
@@ -83,45 +71,92 @@ body {
     box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
-/* --- 按鈕與輸入框表單優化 --- */
-.btn {
-    border-radius: 8px !important;
-    padding: 0.5rem 1.25rem;
-    font-weight: 500;
+/* =========================================
+   4. 快速操作按鈕 (Quick Actions)
+   ========================================= */
+.border-dashed {
+    border: 2px dashed #cbd5e1 !important;
+    transition: all 0.2s ease;
 }
+.border-dashed:hover {
+    border-color: var(--bs-primary) !important;
+    background-color: #f8fafc !important;
+    transform: translateY(-2px);
+}
+.btn { border-radius: 8px !important; font-weight: 500; }
 .btn-primary {
     background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
     border: none !important;
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
 }
-.form-control, .form-select {
-    border-radius: 8px !important;
-    border: 1px solid #cbd5e1;
-    padding: 0.6rem 1rem;
+.btn-primary:hover { box-shadow: 0 6px 8px -1px rgba(79, 70, 229, 0.3); }
+
+/* =========================================
+   5. 時間軸 (Operations Feed Timeline)
+   ========================================= */
+.timeline-container {
+    position: relative;
+    padding-left: 0.5rem;
 }
-.form-control:focus, .form-select:focus {
-    border-color: #a5b4fc;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+/* 畫一條垂直嘅灰色時間線 */
+.timeline-container::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    bottom: 20px;
+    left: 28px;
+    width: 2px;
+    background-color: #e2e8f0;
+    z-index: 0;
+}
+.timeline-container .d-flex { position: relative; z-index: 1; }
+/* 圓形 Icon 底色 */
+.timeline-container .bg-light {
+    background-color: #ffffff !important;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
-/* --- 軟色調標籤 (Soft Badges) --- */
-.badge {
-    padding: 0.5em 0.8em !important;
-    border-radius: 6px !important;
-    font-weight: 500 !important;
+/* =========================================
+   6. 表格與柔和標籤 (Tables & Soft Badges)
+   ========================================= */
+.table { margin-bottom: 0; }
+.table > :not(caption) > * > * {
+    padding: 1rem 1.25rem !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    vertical-align: middle;
 }
+.table th, .table thead.table-dark th {
+    background-color: #ffffff !important;
+    color: #64748b !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e2e8f0 !important;
+}
+.table-hover tbody tr { transition: background-color 0.2s ease; }
+.table-hover tbody tr:hover { background-color: #f8fafc !important; }
+
+/* 令 Badge 唔會咁刺眼，轉用底色淺、字色深嘅配搭 */
+.badge { padding: 0.5em 0.8em !important; border-radius: 6px !important; font-weight: 600 !important; letter-spacing: 0.025em; }
 .bg-success { background-color: #dcfce7 !important; color: #15803d !important; }
 .bg-warning { background-color: #fef9c3 !important; color: #a16207 !important; }
 .bg-danger { background-color: #fee2e2 !important; color: #b91c1c !important; }
 .bg-primary { background-color: #e0e7ff !important; color: #4338ca !important; }
 .bg-info { background-color: #ecfeff !important; color: #0369a1 !important; }
+.bg-secondary { background-color: #f1f5f9 !important; color: #475569 !important; }
 
-/* --- 專門為 index.php 全域搜尋而設 --- */
-.global-search {
-    max-width: 600px;
-    margin: 0 auto 2rem;
-}
+/* =========================================
+   7. 搜尋框去邊框設計
+   ========================================= */
+.input-group-text { border-radius: 8px 0 0 8px !important; border-color: #cbd5e1; }
+.input-group .form-control { border-radius: 0 8px 8px 0 !important; border-color: #cbd5e1; }
+.input-group .form-control:focus { box-shadow: none; border-color: #cbd5e1; }
 
-/* --- ⚡ RWD 流動端絕對統一排版 (原寫死在 index.php) --- */
+/* =========================================
+   8. 流動端響應式 (RWD)
+   ========================================= */
 @media (max-width: 768px) {
     .sidebar {
         position: fixed !important;
@@ -129,12 +164,7 @@ body {
         transform: translateX(-100%);
         transition: transform 0.3s ease;
     }
-    .sidebar.show {
-        transform: translateX(0);
-    }
-    .main-content {
-        padding: 1rem !important;
-    }
+    .sidebar.show { transform: translateX(0); }
     .mobile-nav-toggle {
         display: block !important;
         position: fixed;

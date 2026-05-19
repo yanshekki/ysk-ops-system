@@ -11,7 +11,7 @@ $page = max(1, (int)($_GET['page'] ?? 1));
 $per_page = 15;
 $offset = ($page - 1) * $per_page;
 
-// Handle form submissions
+// 處理 POST 請求 (新增、編輯、刪除)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add_client']) || isset($_POST['update_client'])) {
         $data = [
@@ -36,11 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (isset($_POST['delete_client'])) {
         db_delete('clients', 'id = ?', [$_POST['client_id']]);
-        $success = '客戶已刪除！';
+        $success = '客戶已徹底刪除！';
     }
 }
 
-// Build query for count
+// 建立分頁與搜尋的 SQL 查詢
 $count_sql = "SELECT COUNT(*) as total FROM clients WHERE 1=1";
 $count_params = [];
 
@@ -59,7 +59,7 @@ if ($status_filter) {
 $total = db_fetch_one($count_sql, $count_params)['total'] ?? 0;
 $total_pages = ceil($total / $per_page);
 
-// Fetch clients with pagination
+// 獲取客戶資料
 $sql = "SELECT * FROM clients WHERE 1=1";
 $params = [];
 
@@ -77,219 +77,320 @@ if ($status_filter) {
 
 $sql .= " ORDER BY created_at DESC LIMIT $per_page OFFSET $offset";
 $clients = db_fetch_all($sql, $params);
+
+// 狀態標籤定義
+$status_labels = [
+    'active' => ['text' => '活躍客戶', 'color' => 'success', 'icon' => 'bi-check-circle'],
+    'lead' => ['text' => '潛在客戶', 'color' => 'warning', 'icon' => 'bi-star'],
+    'inactive' => ['text' => '非活躍', 'color' => 'secondary', 'icon' => 'bi-pause-circle']
+];
 ?>
 <?php $page_title = "客戶管理"; ?>
 <?php include 'includes/header.php'; ?>
 <div class="d-flex">
-    <!-- Mobile Menu Toggle -->
     <button class="mobile-nav-toggle btn d-md-none" onclick="toggleSidebar()">
         <i class="bi bi-list fs-4"></i>
     </button>
     
-    <!-- Unified Sidebar -->
     <?php include 'includes/sidebar.php'; ?>
     
     <div class="flex-grow-1 p-4">
+        
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-people me-2"></i> 客戶管理 (CRM)</h2>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addClientModal">
+            <div>
+                <h2 class="h3 fw-bold mb-1 text-slate-800"><i class="bi bi-building me-2 text-primary"></i> 客戶管理 (CRM)</h2>
+                <p class="text-muted mb-0 d-none d-md-block">管理公司客戶檔案及聯絡資訊</p>
+            </div>
+            <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addClientModal">
                 <i class="bi bi-plus-circle me-1"></i> 新增客戶
             </button>
         </div>
         
-        <!-- Search and Filter -->
-        <div class="card mb-3">
+        <div class="card mb-4 border-0 shadow-sm">
             <div class="card-body">
                 <form method="GET" class="row g-2 align-items-end">
-                    <div class="col-md-4">
-                        <label class="form-label">搜尋</label>
-                        <input type="text" name="search" class="form-control" value="<?= htmlspecialchars($search) ?>" placeholder="公司名稱 / 聯絡人 / 電郵">
+                    <div class="col-md-5">
+                        <label class="form-label text-slate-500 fw-semibold small">關鍵字搜尋</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-search"></i></span>
+                            <input type="text" name="search" class="form-control border-start-0 ps-0 shadow-none" value="<?= htmlspecialchars($search) ?>" placeholder="公司名稱 / 聯絡人 / 電郵">
+                        </div>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">狀態</label>
-                        <select name="status" class="form-select">
-                            <option value="">全部</option>
-                            <option value="active" <?= $status_filter=='active'?'selected':'' ?>>活躍</option>
-                            <option value="lead" <?= $status_filter=='lead'?'selected':'' ?>>潛在客戶</option>
-                            <option value="inactive" <?= $status_filter=='inactive'?'selected':'' ?>>非活躍</option>
+                        <label class="form-label text-slate-500 fw-semibold small">客戶狀態</label>
+                        <select name="status" class="form-select shadow-none">
+                            <option value="">全部狀態</option>
+                            <?php foreach ($status_labels as $key => $s): ?>
+                                <option value="<?= $key ?>" <?= $status_filter === $key ? 'selected' : '' ?>><?= $s['text'] ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="col-md-2">
                         <button type="submit" class="btn btn-outline-primary w-100">搜尋</button>
                     </div>
-                    <div class="col-md-3 text-end">
-                        <a href="clients.php" class="btn btn-outline-secondary">清除篩選</a>
+                    <div class="col-md-2 text-end">
+                        <a href="clients.php" class="btn btn-light w-100 border">清除</a>
                     </div>
                 </form>
             </div>
         </div>
         
-        <?php if ($success): ?><div class="alert alert-success"><?= $success ?></div><?php endif; ?>
+        <?php if ($success): ?><div class="alert alert-success border-0 shadow-sm"><i class="bi bi-check-circle me-2"></i><?= $success ?></div><?php endif; ?>
+        <?php if ($error): ?><div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-circle me-2"></i><?= $error ?></div><?php endif; ?>
         
-        <div class="card">
+        <div class="card border-0 shadow-sm mb-4">
             <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>公司名稱</th>
-                            <th>聯絡人</th>
-                            <th>電郵 / 電話</th>
-                            <th>狀態</th>
-                            <th>建立日期</th>
-                            <th width="140">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($clients as $c): ?>
-                        <tr>
-                            <td><?= $c['id'] ?></td>
-                            <td><strong><?= htmlspecialchars($c['company_name'] ?? '') ?></strong></td>
-                            <td><?= htmlspecialchars($c['contact_person'] ?? '-') ?></td>
-                            <td>
-                                <?= htmlspecialchars($c['email'] ?? '-') ?><br>
-                                <small class="text-muted"><?= htmlspecialchars($c['phone'] ?? '-') ?></small>
-                            </td>
-                            <td>
-                                <span class="badge bg-<?= $c['status']==='active'?'success':($c['status']==='lead'?'warning':'secondary') ?>">
-                                    <?= ucfirst($c['status']) ?>
-                                </span>
-                            </td>
-                            <td><?= date('Y-m-d', strtotime($c['created_at'])) ?></td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editClientModal<?= $c['id'] ?>">編輯</button>
-                                <form method="POST" class="d-inline" onsubmit="return confirm('確定刪除此客戶？')">
-                                    <input type="hidden" name="client_id" value="<?= $c['id'] ?>">
-                                    <button type="submit" name="delete_client" class="btn btn-sm btn-outline-danger">刪除</button>
-                                </form>
-                            </td>
-                        </tr>
-                        
-                        <!-- Edit Modal -->
-                        <div class="modal fade" id="editClientModal<?= $c['id'] ?>" tabindex="-1">
-                            <div class="modal-dialog modal-lg">
-                                <div class="modal-content">
-                                    <form method="POST">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">編輯客戶</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th width="60" class="text-center">#</th>
+                                <th>公司名稱</th>
+                                <th>主要聯絡人</th>
+                                <th>聯絡方式</th>
+                                <th>狀態</th>
+                                <th>加入日期</th>
+                                <th width="140" class="text-end pe-4">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($clients as $c): 
+                                $status_info = $status_labels[$c['status']] ?? $status_labels['inactive'];
+                                // 提取公司名稱第一個字 (支援中文) 作為 Avatar
+                                $avatar_char = mb_substr($c['company_name'] ?? 'C', 0, 1, 'UTF-8');
+                            ?>
+                            <tr>
+                                <td class="text-center text-muted"><?= $c['id'] ?></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                            <span class="fw-bold fs-5"><?= htmlspecialchars($avatar_char) ?></span>
                                         </div>
-                                        <div class="modal-body">
-                                            <input type="hidden" name="update_client" value="1">
-                                            <input type="hidden" name="client_id" value="<?= $c['id'] ?>">
-                                            <div class="row g-3">
-                                                <div class="col-md-6">
-                                                    <label class="form-label">公司名稱 *</label>
-                                                    <input type="text" name="company_name" class="form-control" value="<?= htmlspecialchars($c['company_name'] ?? '') ?>" required>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">聯絡人</label>
-                                                    <input type="text" name="contact_person" class="form-control" value="<?= htmlspecialchars($c['contact_person'] ?? '') ?>">
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">電郵</label>
-                                                    <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($c['email'] ?? '') ?>">
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">電話</label>
-                                                    <input type="tel" name="phone" class="form-control" value="<?= htmlspecialchars($c['phone'] ?? '') ?>">
-                                                </div>
-                                                <div class="col-12">
-                                                    <label class="form-label">地址</label>
-                                                    <textarea name="address" class="form-control" rows="2"><?= htmlspecialchars($c['address'] ?? '') ?></textarea>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">狀態</label>
-                                                    <select name="status" class="form-select">
-                                                        <option value="active" <?= $c['status']=='active'?'selected':'' ?>>活躍</option>
-                                                        <option value="lead" <?= $c['status']=='lead'?'selected':'' ?>>潛在客戶</option>
-                                                        <option value="inactive" <?= $c['status']=='inactive'?'selected':'' ?>>非活躍</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-12">
-                                                    <label class="form-label">備註</label>
-                                                    <textarea name="notes" class="form-control" rows="3"><?= htmlspecialchars($c['notes'] ?? '') ?></textarea>
+                                        <div>
+                                            <div class="fw-bold text-slate-800"><?= htmlspecialchars($c['company_name'] ?? '') ?></div>
+                                            <?php if($c['address']): ?>
+                                                <div class="small text-muted text-truncate" style="max-width: 200px;"><i class="bi bi-geo-alt me-1"></i><?= htmlspecialchars($c['address']) ?></div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="text-slate-700 fw-medium"><?= htmlspecialchars($c['contact_person'] ?: '未提供') ?></span>
+                                </td>
+                                <td>
+                                    <div class="text-slate-700"><i class="bi bi-envelope text-muted me-1"></i><?= htmlspecialchars($c['email'] ?: '-') ?></div>
+                                    <div class="small text-muted mt-1"><i class="bi bi-telephone text-muted me-1"></i><?= htmlspecialchars($c['phone'] ?: '-') ?></div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-<?= $status_info['color'] ?> bg-opacity-10 text-<?= $status_info['color'] ?> px-2 py-1">
+                                        <i class="bi <?= $status_info['icon'] ?> me-1"></i><?= $status_info['text'] ?>
+                                    </span>
+                                </td>
+                                <td class="text-muted small"><?= date('Y-m-d', strtotime($c['created_at'])) ?></td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-light border text-primary me-1" data-bs-toggle="modal" data-bs-target="#editClientModal<?= $c['id'] ?>" title="編輯"><i class="bi bi-pencil-square"></i></button>
+                                    
+                                    <form method="POST" class="d-inline" onsubmit="return confirm('⚠️ 嚴重警告！\n\n刪除客戶將會連帶永久刪除該客戶名下的：\n- 所有項目 (Projects)\n- 所有任務 (Tasks)\n- 所有發票 (Invoices)\n\n建議在編輯中將狀態改為「非活躍」。\n\n確定要強制刪除嗎？')">
+                                        <input type="hidden" name="client_id" value="<?= $c['id'] ?>">
+                                        <button type="submit" name="delete_client" class="btn btn-sm btn-light border text-danger" title="刪除"><i class="bi bi-trash3"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            
+                            <div class="modal fade" id="editClientModal<?= $c['id'] ?>" tabindex="-1">
+                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                    <div class="modal-content border-0 shadow-lg">
+                                        <form method="POST">
+                                            <div class="modal-header border-0 pb-0 pt-4 px-4">
+                                                <h5 class="modal-title fw-bold text-slate-800 d-flex align-items-center">
+                                                    <div class="bg-warning bg-opacity-10 text-warning rounded-3 p-2 me-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                                        <i class="bi bi-pencil-square fs-5"></i>
+                                                    </div>
+                                                    編輯客戶資料
+                                                </h5>
+                                                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body p-4">
+                                                <input type="hidden" name="update_client" value="1">
+                                                <input type="hidden" name="client_id" value="<?= $c['id'] ?>">
+                                                
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label text-slate-500 fw-semibold small mb-1">公司名稱 *</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-building"></i></span>
+                                                            <input type="text" name="company_name" class="form-control border-start-0 ps-0 shadow-none" value="<?= htmlspecialchars($c['company_name'] ?? '') ?>" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label text-slate-500 fw-semibold small mb-1">客戶狀態 *</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-activity"></i></span>
+                                                            <select name="status" class="form-select border-start-0 ps-0 shadow-none" required>
+                                                                <?php foreach ($status_labels as $key => $s): ?>
+                                                                    <option value="<?= $key ?>" <?= $c['status'] == $key ? 'selected' : '' ?>><?= $s['text'] ?></option>
+                                                                <?php endforeach; ?>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label text-slate-500 fw-semibold small mb-1">主要聯絡人</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-person"></i></span>
+                                                            <input type="text" name="contact_person" class="form-control border-start-0 ps-0 shadow-none" value="<?= htmlspecialchars($c['contact_person'] ?? '') ?>">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label text-slate-500 fw-semibold small mb-1">電郵地址</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-envelope"></i></span>
+                                                            <input type="email" name="email" class="form-control border-start-0 ps-0 shadow-none" value="<?= htmlspecialchars($c['email'] ?? '') ?>">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-12">
+                                                        <label class="form-label text-slate-500 fw-semibold small mb-1">電話號碼</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-telephone"></i></span>
+                                                            <input type="tel" name="phone" class="form-control border-start-0 ps-0 shadow-none" value="<?= htmlspecialchars($c['phone'] ?? '') ?>">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label class="form-label text-slate-500 fw-semibold small mb-1">公司地址</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-geo-alt"></i></span>
+                                                            <textarea name="address" class="form-control border-start-0 ps-0 shadow-none" rows="2"><?= htmlspecialchars($c['address'] ?? '') ?></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label class="form-label text-slate-500 fw-semibold small mb-1">內部備註 (僅員工可見)</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-card-text"></i></span>
+                                                            <textarea name="notes" class="form-control border-start-0 ps-0 shadow-none" rows="3"><?= htmlspecialchars($c['notes'] ?? '') ?></textarea>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                                            <button type="submit" class="btn btn-primary">儲存變更</button>
-                                        </div>
-                                    </form>
+                                            <div class="modal-footer border-0 pt-0 pb-4 px-4">
+                                                <button type="button" class="btn btn-light border fw-medium" data-bs-dismiss="modal">取消</button>
+                                                <button type="submit" class="btn btn-primary px-4 shadow-sm">儲存變更</button>
+                                            </div>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                            <?php endforeach; ?>
+                            
+                            <?php if (empty($clients)): ?>
+                            <tr>
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="bi bi-search fs-1 d-block mb-2 opacity-50"></i>
+                                    找不到符合條件的客戶
+                                </td>
+                            </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         
-        <!-- Pagination -->
         <?php if ($total_pages > 1): ?>
         <div class="d-flex justify-content-center mt-3">
             <nav>
-                <ul class="pagination">
+                <ul class="pagination shadow-sm">
                     <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-                        <a class="page-link" href="?page=<?= $page-1 ?>&search=<?= urlencode($search) ?>&status=<?= $status_filter ?>">上一頁</a>
+                        <a class="page-link text-slate-500" href="?page=<?= $page-1 ?>&search=<?= urlencode($search) ?>&status=<?= $status_filter ?>">上一頁</a>
                     </li>
                     <?php for ($i = 1; $i <= $total_pages; $i++): ?>
                     <li class="page-item <?= $i == $page ? 'active' : '' ?>">
-                        <a class="page-link" href="?page=<?= $i ?>&search=<?= urlencode($search) ?>&status=<?= $status_filter ?>"><?= $i ?></a>
+                        <a class="page-link <?= $i == $page ? 'bg-primary border-primary' : 'text-slate-500' ?>" href="?page=<?= $i ?>&search=<?= urlencode($search) ?>&status=<?= $status_filter ?>"><?= $i ?></a>
                     </li>
                     <?php endfor; ?>
                     <li class="page-item <?= $page >= $total_pages ? 'disabled' : '' ?>">
-                        <a class="page-link" href="?page=<?= $page+1 ?>&search=<?= urlencode($search) ?>&status=<?= $status_filter ?>">下一頁</a>
+                        <a class="page-link text-slate-500" href="?page=<?= $page+1 ?>&search=<?= urlencode($search) ?>&status=<?= $status_filter ?>">下一頁</a>
                     </li>
                 </ul>
             </nav>
         </div>
         <?php endif; ?>
+        
     </div>
 </div>
 
-<!-- Add Client Modal -->
 <div class="modal fade" id="addClientModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
             <form method="POST">
-                <div class="modal-header">
-                    <h5 class="modal-title">新增客戶</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <h5 class="modal-title fw-bold text-slate-800 d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-2 me-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                            <i class="bi bi-building-add fs-5"></i>
+                        </div>
+                        新增客戶資料
+                    </h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <input type="hidden" name="add_client" value="1">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">公司名稱 *</label>
-                            <input type="text" name="company_name" class="form-control" required>
+                            <label class="form-label text-slate-500 fw-semibold small mb-1">公司名稱 *</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-building"></i></span>
+                                <input type="text" name="company_name" class="form-control border-start-0 ps-0 shadow-none" placeholder="例如：YSK Limited" required>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">聯絡人</label>
-                            <input type="text" name="contact_person" class="form-control">
+                            <label class="form-label text-slate-500 fw-semibold small mb-1">客戶狀態 *</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-activity"></i></span>
+                                <select name="status" class="form-select border-start-0 ps-0 shadow-none" required>
+                                    <?php foreach ($status_labels as $key => $s): ?>
+                                        <option value="<?= $key ?>"><?= $s['text'] ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">電郵</label>
-                            <input type="email" name="email" class="form-control">
+                            <label class="form-label text-slate-500 fw-semibold small mb-1">主要聯絡人</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-person"></i></span>
+                                <input type="text" name="contact_person" class="form-control border-start-0 ps-0 shadow-none" placeholder="聯絡人姓名">
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">電話</label>
-                            <input type="tel" name="phone" class="form-control">
+                            <label class="form-label text-slate-500 fw-semibold small mb-1">電郵地址</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-envelope"></i></span>
+                                <input type="email" name="email" class="form-control border-start-0 ps-0 shadow-none" placeholder="contact@example.com">
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label text-slate-500 fw-semibold small mb-1">電話號碼</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-telephone"></i></span>
+                                <input type="tel" name="phone" class="form-control border-start-0 ps-0 shadow-none" placeholder="+852 1234 5678">
+                            </div>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">地址</label>
-                            <textarea name="address" class="form-control" rows="2"></textarea>
+                            <label class="form-label text-slate-500 fw-semibold small mb-1">公司地址</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-geo-alt"></i></span>
+                                <textarea name="address" class="form-control border-start-0 ps-0 shadow-none" rows="2" placeholder="詳細地址..."></textarea>
+                            </div>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">備註</label>
-                            <textarea name="notes" class="form-control" rows="3"></textarea>
+                            <label class="form-label text-slate-500 fw-semibold small mb-1">內部備註 (僅員工可見)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-card-text"></i></span>
+                                <textarea name="notes" class="form-control border-start-0 ps-0 shadow-none" rows="3" placeholder="添加有關此客戶的備註..."></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="submit" class="btn btn-primary">新增客戶</button>
+                <div class="modal-footer border-0 pt-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light border fw-medium" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary px-4 shadow-sm"><i class="bi bi-check-lg me-1"></i> 新增客戶</button>
                 </div>
             </form>
         </div>

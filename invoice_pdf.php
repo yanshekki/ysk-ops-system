@@ -24,143 +24,438 @@ if (!$invoice) {
     die('Invoice not found');
 }
 
-// Professional PDF-ready HTML (user can Print > Save as PDF)
+// Professional PDF-ready HTML
 header('Content-Type: text/html; charset=utf-8');
 ?>
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <title>Invoice <?= $invoice['invoice_number'] ?> - YSK Limited</title>
+    <title>Invoice_<?= htmlspecialchars($invoice['invoice_number'] ?? '') ?>_YSK</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        @page { size: A4; margin: 15mm; }
-        body { font-family: 'Segoe UI', Arial, 'Microsoft YaHei', sans-serif; font-size: 11pt; line-height: 1.6; color: #222; margin: 0; padding: 0; }
-        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 4px solid #0d6efd; padding-bottom: 15px; margin-bottom: 25px; }
-        .company { }
-        .company-name { font-size: 22pt; font-weight: 700; color: #0d6efd; letter-spacing: -0.5px; }
-        .company-info { font-size: 9pt; color: #555; line-height: 1.4; margin-top: 5px; }
-        .invoice-meta { text-align: right; }
-        .invoice-number { font-size: 16pt; font-weight: 700; color: #0d6efd; }
-        .section-title { font-size: 10pt; font-weight: 600; color: #0d6efd; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px; }
-        .info-box { background: #f8f9fa; padding: 14px 18px; border-radius: 8px; border-left: 4px solid #0d6efd; }
-        .info-box h4 { margin: 0 0 8px 0; font-size: 10pt; color: #0d6efd; }
-        .amount-table { width: 100%; border-collapse: collapse; margin: 25px 0; }
-        .amount-table th, .amount-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e9ecef; }
-        .amount-table th { background: #f1f3f5; font-weight: 600; color: #495057; }
-        .amount-table .text-right { text-align: right; }
-        .total-row { background: #e7f1ff; font-weight: 700; font-size: 13pt; }
-        .total-row td { border-top: 2px solid #0d6efd; padding-top: 15px; }
-        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 9pt; font-weight: 600; }
-        .status-paid { background: #d1fae5; color: #065f46; }
-        .status-pending { background: #fef3c7; color: #92400e; }
-        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #dee2e6; font-size: 9pt; color: #6c757d; text-align: center; }
-        .thank-you { font-size: 11pt; color: #0d6efd; font-weight: 600; margin: 15px 0; }
+        :root {
+            --brand-color: #4f46e5;
+            --brand-dark: #3730a3;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --page-width: 210mm;
+            --page-height: 297mm;
+        }
+
+        /* 網頁桌面背景 */
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #cbd5e1;
+            margin: 0;
+            padding: 2rem 0;
+            -webkit-font-smoothing: antialiased;
+            color: var(--text-main);
+        }
+
+        /* 頂部操作列 */
+        .action-bar {
+            width: var(--page-width);
+            margin: 0 auto 20px auto;
+            background: #ffffff;
+            padding: 20px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .action-info .title {
+            font-size: 13pt;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .action-info .hint {
+            font-size: 9.5pt;
+            color: var(--text-muted);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 10pt;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        .btn-print { background: var(--text-main); color: #fff; border: none; }
+        .btn-print:hover { background: #0f172a; }
+        .btn-pay { background: var(--brand-color); color: #fff; border: none; }
+        .btn-pay:hover { background: var(--brand-dark); }
+
+        /* 真實 A4 紙張模擬 */
+        .a4-sheet {
+            width: var(--page-width);
+            min-height: var(--page-height);
+            margin: 0 auto;
+            background: #ffffff;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+            padding: 20mm;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .watermark {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 140px;
+            font-weight: 800;
+            color: rgba(22, 101, 52, 0.04);
+            border: 12px solid rgba(22, 101, 52, 0.04);
+            border-radius: 24px;
+            padding: 20px 50px;
+            pointer-events: none;
+            z-index: 0;
+            letter-spacing: 10px;
+        }
+
+        .content-layer { position: relative; z-index: 1; }
+
+        /* Header */
+        .inv-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .company-address { font-size: 9.5pt; color: var(--text-muted); line-height: 1.6; }
+        .company-address strong { color: var(--text-main); font-size: 11pt; }
+        
+        .inv-title {
+            font-size: 22pt;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: 1px;
+            text-align: right;
+            margin-bottom: 5px;
+        }
+        .inv-number {
+            font-size: 13pt;
+            font-weight: 600;
+            color: var(--brand-color);
+            text-align: right;
+            margin-bottom: 15px;
+        }
+        .dates-table { width: auto; margin-left: auto; border-collapse: collapse; font-size: 9.5pt; }
+        .dates-table td { padding: 3px 0; text-align: right; }
+        .dates-table td.label { color: var(--text-muted); padding-right: 15px; }
+        .dates-table td.value { font-weight: 600; color: var(--text-main); }
+
+        /* 雙欄網格 */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        .section-label {
+            font-size: 8.5pt;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            border-left: 3px solid var(--brand-color);
+            padding-left: 8px;
+        }
+        .client-name { font-size: 12pt; font-weight: 700; color: var(--text-main); margin-bottom: 6px; }
+        .client-details { font-size: 9.5pt; color: var(--text-main); line-height: 1.6; }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 8.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        .status-paid { background: #dcfce7; color: #166534; }
+        .status-pending { background: #fef9c3; color: #854d0e; }
+        .status-overdue { background: #fee2e2; color: #991b1b; }
+        .status-draft { background: #f1f5f9; color: #475569; }
+
+        .details-table { font-size: 9.5pt; width: 100%; border-collapse: collapse; }
+        .details-table td { padding: 3px 0; }
+        .details-table td.label { color: var(--text-muted); width: 35%; }
+        .details-table td.value { font-weight: 500; color: var(--text-main); }
+
+        /* 金額明細表 */
+        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .items-table th {
+            background: #f8fafc;
+            padding: 12px 15px;
+            text-align: left;
+            font-size: 8.5pt;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .items-table th.text-right { text-align: right; }
+        .items-table td {
+            padding: 16px 15px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+        .items-table td.text-right { text-align: right; font-weight: 500; font-size: 10.5pt; }
+        .item-title { font-weight: 600; color: var(--text-main); margin-bottom: 4px; font-size: 10.5pt; }
+        .item-desc { font-size: 9pt; color: var(--text-muted); white-space: pre-line; }
+
+        /* 總計計算區 */
+        .totals-container { display: flex; justify-content: flex-end; margin-bottom: 40px; }
+        .totals-table { width: 320px; border-collapse: collapse; }
+        .totals-table td { padding: 8px 15px; text-align: right; }
+        .totals-table td.label { color: var(--text-muted); font-size: 9.5pt; }
+        .totals-table td.amount { font-weight: 600; font-size: 10.5pt; color: var(--text-main); }
+        
+        .total-row td {
+            padding: 16px 15px;
+            border-top: 2px solid var(--brand-color);
+            background: #f8fafc;
+        }
+        .total-row td.label { font-weight: 700; font-size: 10.5pt; color: var(--text-main); vertical-align: middle; }
+        .total-row td.amount { 
+            font-size: 16pt; 
+            font-weight: 800; 
+            color: var(--brand-color); 
+            white-space: nowrap;
+        }
+        .currency { font-size: 11pt; color: var(--text-muted); margin-right: 4px; font-weight: 600; }
+
+        /* 底部付款資訊 */
+        .payment-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .payment-box {
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            font-size: 9pt;
+            line-height: 1.7;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+        .payment-box strong { color: var(--text-main); font-weight: 600; display: block; margin-bottom: 8px; font-size: 9.5pt;}
+        
+        .footer {
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            font-size: 8.5pt;
+            color: var(--text-muted);
+        }
+        .footer .thanks { font-size: 11pt; font-weight: 600; color: var(--brand-color); margin-bottom: 6px; }
+
+        /* Print 專用樣式 */
         @media print {
-            body { margin: 0; }
-            .no-print { display: none; }
+            body { background-color: #fff; padding: 0; margin: 0; }
+            .action-bar { display: none !important; }
+            .a4-sheet { box-shadow: none; margin: 0; width: 100%; }
+            @page { size: A4; margin: 0; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div class="company">
-                <div class="company-name">YSK LIMITED</div>
-                <div class="company-info">
-                    Tin Shui Wai, Hong Kong<br>
-                    Tel: +852 6160 4242 | www.ysk.hk<br>
-                    Email: billing@ysk.hk
-                </div>
-            </div>
-            <div class="invoice-meta">
-                <div class="invoice-number">#<?= $invoice['invoice_number'] ?></div>
-                <div style="margin-top: 8px; font-size: 10pt;">
-                    <strong>Issue Date:</strong> <?= $invoice['issue_date'] ?><br>
-                    <strong>Due Date:</strong> <?= $invoice['due_date'] ?>
-                </div>
-            </div>
+
+    <div class="action-bar no-print">
+        <div class="action-info">
+            <div class="title">Invoice #<?= htmlspecialchars($invoice['invoice_number'] ?? '') ?></div>
+            <div class="hint">請使用 A4 尺寸並勾選「背景圖形」進行列印或儲存為 PDF。</div>
         </div>
-
-        <div style="text-align: center; margin-bottom: 20px;">
-            <span style="font-size: 13pt; font-weight: 700; color: #0d6efd; letter-spacing: 1px;">TAX INVOICE / 稅務發票</span>
-        </div>
-
-        <!-- Client & Invoice Info -->
-        <div class="info-grid">
-            <div class="info-box">
-                <div class="section-title">Bill To / 客戶資料</div>
-                <strong><?= htmlspecialchars($invoice['company_name']) ?></strong><br>
-                <?= htmlspecialchars($invoice['contact_person'] ?: '-') ?><br>
-                <?= htmlspecialchars($invoice['email'] ?: '-') ?><br>
-                <?= htmlspecialchars($invoice['phone'] ?: '-') ?><br>
-                <div style="margin-top: 6px; font-size: 9.5pt; color: #555;"><?= nl2br(htmlspecialchars($invoice['address'] ?: '-')) ?></div>
-            </div>
-            <div class="info-box">
-                <div class="section-title">Invoice Details / 發票詳情</div>
-                <strong>Status:</strong> 
-                <span class="status-badge <?= $invoice['status'] == 'paid' ? 'status-paid' : 'status-pending' ?>">
-                    <?= strtoupper($invoice['status']) ?>
-                </span><br>
-                <?php if ($invoice['project_title']): ?>
-                <strong>Project:</strong> <?= htmlspecialchars($invoice['project_title']) ?><br>
-                <?php endif; ?>
-                <strong>Created By:</strong> System<br>
-                <strong>Notes:</strong> <?= htmlspecialchars($invoice['notes'] ?: 'N/A') ?>
-            </div>
-        </div>
-
-        <!-- Amount Breakdown -->
-        <table class="amount-table">
-            <thead>
-                <tr>
-                    <th style="width: 65%;">Description / 項目說明</th>
-                    <th class="text-right" style="width: 35%;">Amount (HKD) / 金額</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>
-                        <?= $invoice['project_title'] ? htmlspecialchars($invoice['project_title']) : 'Professional Services & Consulting' ?><br>
-                        <span style="font-size: 9.5pt; color: #666;"><?= nl2br(htmlspecialchars($invoice['notes'] ?: 'Development & Technical Support')) ?></span>
-                    </td>
-                    <td class="text-right" style="vertical-align: top; padding-top: 18px;">
-                        <?= number_format($invoice['subtotal'], 2) ?>
-                    </td>
-                </tr>
-                <?php if ($invoice['tax_percent'] > 0): ?>
-                <tr>
-                    <td style="text-align: right; padding-right: 15px; color: #555;">Tax / 稅項 (<?= $invoice['tax_percent'] ?>%)</td>
-                    <td class="text-right"><?= number_format($invoice['total_amount'] - $invoice['subtotal'], 2) ?></td>
-                </tr>
-                <?php endif; ?>
-                <tr class="total-row">
-                    <td style="text-align: right; padding-right: 15px; font-size: 12.5pt;"><strong>TOTAL DUE / 應付總額 (HKD)</strong></td>
-                    <td class="text-right" style="font-size: 15pt; color: #0d6efd; font-weight: 700;"><?= number_format($invoice['total_amount'], 2) ?></td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div style="background: #f8f9fa; padding: 16px 20px; border-radius: 8px; margin: 25px 0; font-size: 9.5pt;">
-            <strong>Payment Methods / 付款方式</strong><br>
-            • Bank Transfer (請聯絡我們索取銀行資料)<br>
-            • Stripe / Credit Card (recommended)<br>
-            • PayPal available upon request
-        </div>
-
-        <div class="footer">
-            <div class="thank-you">Thank you for your business! 感謝您的惠顧</div>
-            <div>YSK Limited • Professional Digital Solutions</div>
-            <div style="margin-top: 8px; font-size: 8.5pt;">This is a computer-generated document. No signature required.</div>
-        </div>
-
-        <div class="no-print" style="text-align: center; margin-top: 30px;">
-            <button onclick="window.print()" style="background: #0d6efd; color: white; border: none; padding: 10px 25px; border-radius: 6px; font-size: 10pt; cursor: pointer;">
-                🖨️ Print / Save as PDF
-            </button>
+        <div class="action-buttons">
+            <button onclick="window.print()" class="btn btn-print">🖨️ 列印 / 下載 PDF</button>
+            <?php if ($invoice['status'] !== 'paid'): ?>
+                <a href="stripe_checkout.php?invoice_id=<?= $invoice['id'] ?>" class="btn btn-pay">💳 前往線上付款</a>
+            <?php endif; ?>
         </div>
     </div>
+
+    <div class="a4-sheet">
+        
+        <?php if ($invoice['status'] === 'paid'): ?>
+            <div class="watermark">PAID</div>
+        <?php endif; ?>
+
+        <div class="content-layer">
+            
+            <div class="inv-header">
+                <div>
+                    <!-- 修正 Logo 顯示：確保列印在白紙上也能清晰顯示，移除多餘文字 -->
+                    <img src="https://ysk.hk/logo.svg" alt="YSK Limited" style="height: 48px; width: auto; margin-bottom: 15px; filter: brightness(0);">
+                    <div class="company-address">
+                        <strong>YSK LIMITED</strong><br>
+                        Tin Shui Wai, Hong Kong<br>
+                        Tel: +852 6160 4242 | Web: www.ysk.hk<br>
+                        Email: billing@ysk.hk
+                    </div>
+                </div>
+                <div>
+                    <div class="inv-title">TAX INVOICE</div>
+                    <div class="inv-number">#<?= htmlspecialchars($invoice['invoice_number'] ?? '') ?></div>
+                    <table class="dates-table">
+                        <tr>
+                            <td class="label">Issue Date:</td>
+                            <td class="value"><?= htmlspecialchars($invoice['issue_date'] ?? '') ?></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Due Date:</td>
+                            <td class="value"><?= htmlspecialchars($invoice['due_date'] ?? '') ?></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div>
+                    <div class="section-label">Bill To / 客戶資料</div>
+                    <div class="client-name"><?= htmlspecialchars($invoice['company_name'] ?? 'Unknown Client') ?></div>
+                    <div class="client-details">
+                        <?= htmlspecialchars($invoice['contact_person'] ?? '') ?><br>
+                        <?= htmlspecialchars($invoice['email'] ?? '') ?><br>
+                        <?= htmlspecialchars($invoice['phone'] ?? '') ?><br>
+                        <?php if (!empty($invoice['address'])): ?>
+                            <div style="margin-top: 6px; color: var(--text-muted);">
+                                <?= nl2br(htmlspecialchars($invoice['address'])) ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="section-label">Invoice Details / 發票詳情</div>
+                    <?php 
+                        $status_class = 'status-pending';
+                        if ($invoice['status'] == 'paid') $status_class = 'status-paid';
+                        if ($invoice['status'] == 'overdue') $status_class = 'status-overdue';
+                        if ($invoice['status'] == 'draft') $status_class = 'status-draft';
+                    ?>
+                    <div class="status-badge <?= $status_class ?>">
+                        <?= strtoupper(htmlspecialchars($invoice['status'] ?? 'Draft')) ?>
+                    </div>
+                    
+                    <table class="details-table">
+                        <?php if (!empty($invoice['project_title'])): ?>
+                        <tr>
+                            <td class="label">Project:</td>
+                            <td class="value"><?= htmlspecialchars($invoice['project_title']) ?></td>
+                        </tr>
+                        <?php endif; ?>
+                        <tr>
+                            <td class="label">Generated By:</td>
+                            <td class="value">YSK System</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 75%;">Description / 項目說明</th>
+                        <th class="text-right" style="width: 25%;">Amount (HKD)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="item-title">
+                                <?= !empty($invoice['project_title']) ? htmlspecialchars($invoice['project_title']) : 'Professional Services & Consulting' ?>
+                            </div>
+                            <div class="item-desc">
+                                <?= !empty($invoice['notes']) ? nl2br(htmlspecialchars($invoice['notes'])) : 'Development & Technical Support Services' ?>
+                            </div>
+                        </td>
+                        <td class="text-right">
+                            <?= number_format($invoice['subtotal'] ?? 0, 2) ?>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="totals-container">
+                <table class="totals-table">
+                    <tr>
+                        <td class="label">Subtotal / 小計:</td>
+                        <td class="amount"><?= number_format($invoice['subtotal'] ?? 0, 2) ?></td>
+                    </tr>
+                    <?php if (($invoice['tax_percent'] ?? 0) > 0): ?>
+                    <tr>
+                        <td class="label">Tax / 稅項 (<?= htmlspecialchars($invoice['tax_percent']) ?>%):</td>
+                        <td class="amount"><?= number_format(($invoice['total_amount'] ?? 0) - ($invoice['subtotal'] ?? 0), 2) ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <tr class="total-row">
+                        <td class="label">TOTAL DUE / 應付總額:</td>
+                        <td class="amount">
+                            <span class="currency">HK$</span><?= number_format($invoice['total_amount'] ?? 0, 2) ?>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 付款方式分雙欄，更專業 -->
+            <div class="payment-grid">
+                <div class="payment-box">
+                    <strong>1. Bank Transfer / FPS (銀行轉賬/轉數快)</strong>
+                    Bank: HSBC (Hong Kong)<br>
+                    Account Name: YSK LIMITED<br>
+                    A/C No: 123-456789-838<br>
+                    FPS ID: 1234567<br>
+                    <span style="color: var(--text-muted); font-size: 8pt; display:block; margin-top: 5px;">* Please send the receipt to billing@ysk.hk after payment.</span>
+                </div>
+                <div class="payment-box">
+                    <strong>2. Online Payment (線上信用卡支付)</strong>
+                    You can securely pay this invoice online via Stripe (Visa, Mastercard, Apple Pay, Google Pay).<br><br>
+                    <?php if ($invoice['status'] === 'paid'): ?>
+                        <span style="color: #166534; font-weight: 600; font-size: 10pt;">✔ Payment received. Thank you!</span>
+                    <?php else: ?>
+                        Use the <span style="color: var(--brand-color); font-weight: 600;">"Pay Now"</span> button on the digital invoice portal to proceed with online payment.
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="footer">
+                <div class="thanks">Thank you for your business! 感謝您的惠顧</div>
+                <div>YSK Limited • Professional Digital Solutions</div>
+                <div style="margin-top: 4px;">This is a computer-generated document. No signature or stamp is required.</div>
+            </div>
+
+        </div>
+    </div>
+
 </body>
 </html>
