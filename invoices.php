@@ -153,11 +153,11 @@ $projects = db_fetch_all("SELECT id, title FROM projects ORDER BY title");
                         <?php foreach ($invoices as $inv): ?>
                         <tr>
                             <td><strong><?= $inv['invoice_number'] ?></strong></td>
-                            <td><?= htmlspecialchars($inv['company_name']) ?></td>
-                            <td><?= htmlspecialchars($inv['project_title'] ?: '-') ?></td>
+                            <td><?= htmlspecialchars($inv['company_name'] ?? '') ?></td>
+                            <td><?= htmlspecialchars($inv['project_title'] ?? '-') ?></td>
                             <td><?= $inv['issue_date'] ?></td>
                             <td><?= $inv['due_date'] ?></td>
-                            <td class="text-end"><strong><?= number_format($inv['total_amount'], 2) ?></strong></td>
+                            <td class="text-end"><strong><?= number_format($inv['total_amount'] ?? 0, 2) ?></strong></td>
                             <td>
                                 <span class="badge bg-<?= $inv['status'] == 'paid' ? 'success' : ($inv['status'] == 'overdue' ? 'danger' : 'warning') ?>">
                                     <?= ucfirst($inv['status']) ?>
@@ -217,7 +217,7 @@ $projects = db_fetch_all("SELECT id, title FROM projects ORDER BY title");
                             <label class="form-label">客戶 *</label>
                             <select name="client_id" class="form-select" required>
                                 <?php foreach ($clients as $c): ?>
-                                <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['company_name']) ?></option>
+                                <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['company_name'] ?? '') ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -226,7 +226,7 @@ $projects = db_fetch_all("SELECT id, title FROM projects ORDER BY title");
                             <select name="project_id" class="form-select">
                                 <option value="">無</option>
                                 <?php foreach ($projects as $p): ?>
-                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['title']) ?></option>
+                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['title'] ?? '') ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
