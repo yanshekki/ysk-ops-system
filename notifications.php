@@ -11,15 +11,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_notification']))
     $client_id = (int)$_POST['client_id'];
     $message = trim($_POST['message']);
     
-    // In production, integrate with WhatsApp Business API here
-    // For now, just log it
     $client = db_fetch_one("SELECT company_name, phone FROM clients WHERE id = ?", [$client_id]);
     
     if ($client && $client['phone']) {
-        // Simulate sending
         $success = '已像 ' . htmlspecialchars($client['company_name']) . ' 發送 WhatsApp 通知！（模擬）';
         
-        // Log notification
         db_insert('notifications', [
             'client_id' => $client_id,
             'type' => 'whatsapp',
@@ -51,27 +47,21 @@ $recent_notifications = db_fetch_all("
 </head>
 <body>
 <div class="d-flex">
-    <div class="sidebar p-3 text-white" style="width:240px;min-height:100vh;background:#212529;flex-shrink:0;">
-        <div class="d-flex align-items-center mb-4 px-2">
-            <i class="bi bi-gear-fill fs-3 me-2 text-primary"></i>
-            <span class="fs-4 fw-bold">YSK Ops</span>
-        </div>
-        <nav class="nav flex-column">
-            <a href="index.php" class="nav-link mb-1"><i class="bi bi-speedometer2 me-2"></i> 儀表板</a>
-            <a href="notifications.php" class="nav-link active mb-1"><i class="bi bi-bell me-2"></i> 通知中心</a>
-            <a href="client_portal.php" class="nav-link mb-1"><i class="bi bi-globe me-2"></i> 客戶自助門戶</a>
-            <hr class="border-secondary my-3">
-            <a href="logout.php" class="nav-link text-danger"><i class="bi bi-box-arrow-right me-2"></i> 登出</a>
-        </nav>
-    </div>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-nav-toggle btn d-md-none" onclick="toggleSidebar()">
+        <i class="bi bi-list fs-4"></i>
+    </button>
+    
+    <!-- Unified Sidebar -->
+    <?php include 'includes/sidebar.php'; ?>
     
     <div class="flex-grow-1 p-4">
-        <h2 class="mb-4"><i class="bi bi-bell me-2"></i> 通知中心（WhatsApp 整合）</h2>
+        <h2><i class="bi bi-bell me-2"></i> 通知中心（WhatsApp 整合）</h2>
         
         <?php if ($success): ?><div class="alert alert-success"><?= $success ?></div><?php endif; ?>
         <?php if ($error): ?><div class="alert alert-danger"><?= $error ?></div><?php endif; ?>
         
-        <div class="row g-4">
+        <div class="row g-4 mt-2">
             <!-- Send Notification -->
             <div class="col-md-5">
                 <div class="card">
@@ -87,7 +77,7 @@ $recent_notifications = db_fetch_all("
                                     <?php foreach ($clients as $c): ?>
                                     <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['company_name']) ?> (<?= $c['phone'] ?>)</option>
                                     <?php endforeach; ?>
-                                </select>
+                                    </select>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">消息內容</label>
@@ -135,5 +125,11 @@ $recent_notifications = db_fetch_all("
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('show');
+}
+</script>
 </body>
 </html>
