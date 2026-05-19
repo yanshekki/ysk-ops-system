@@ -1,14 +1,15 @@
 <?php
-// Unified Sidebar Navigation
+// Unified Sidebar Navigation - Complete Version
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
-<div class="sidebar p-3 text-white" style="width:240px;min-height:100vh;background:#212529;flex-shrink:0;">
+<div class="sidebar p-3 text-white" style="width:240px;min-height:100vh;background:#212529;flex-shrink:0;" id="sidebar">
     <div class="d-flex align-items-center mb-4 px-2">
         <i class="bi bi-gear-fill fs-3 me-2 text-primary"></i>
         <span class="fs-4 fw-bold">YSK Ops</span>
     </div>
     
     <nav class="nav flex-column">
+        <!-- Core -->
         <a href="index.php" class="nav-link mb-1 <?= $current_page == 'index.php' ? 'active' : '' ?>">
             <i class="bi bi-speedometer2 me-2"></i> 儀表板
         </a>
@@ -33,6 +34,40 @@ $current_page = basename($_SERVER['PHP_SELF']);
         
         <a href="invoices.php" class="nav-link mb-1 <?= $current_page == 'invoices.php' ? 'active' : '' ?>">
             <i class="bi bi-receipt me-2"></i> 發票管理
+        </a>
+        
+        <a href="recurring_invoices.php" class="nav-link mb-1 <?= $current_page == 'recurring_invoices.php' ? 'active' : '' ?>">
+            <i class="bi bi-arrow-repeat me-2"></i> 周期性發票
+        </a>
+        
+        <hr class="border-secondary my-3">
+        
+        <!-- Advanced Features -->
+        <a href="timesheets.php" class="nav-link mb-1 <?= $current_page == 'timesheets.php' ? 'active' : '' ?>">
+            <i class="bi bi-clock-history me-2"></i> 工時記錄
+        </a>
+        
+        <a href="resource_utilization.php" class="nav-link mb-1 <?= $current_page == 'resource_utilization.php' ? 'active' : '' ?>">
+            <i class="bi bi-bar-chart me-2"></i> 資源利用率
+        </a>
+        
+        <a href="profit_analysis.php" class="nav-link mb-1 <?= $current_page == 'profit_analysis.php' ? 'active' : '' ?>">
+            <i class="bi bi-graph-up me-2"></i> 收益分析
+        </a>
+        
+        <a href="client_contribution.php" class="nav-link mb-1 <?= $current_page == 'client_contribution.php' ? 'active' : '' ?>">
+            <i class="bi bi-pie-chart me-2"></i> 客戶貢獻
+        </a>
+        
+        <hr class="border-secondary my-3">
+        
+        <!-- Tools -->
+        <a href="notifications.php" class="nav-link mb-1 <?= $current_page == 'notifications.php' ? 'active' : '' ?>">
+            <i class="bi bi-bell me-2"></i> 通知中心
+        </a>
+        
+        <a href="ai_assistant.php" class="nav-link mb-1 <?= $current_page == 'ai_assistant.php' ? 'active' : '' ?>">
+            <i class="bi bi-robot me-2"></i> AI 助手
         </a>
         
         <hr class="border-secondary my-3">
