@@ -6,6 +6,9 @@ require_login();
 
 $success = $error = '';
 $project_filter = $_GET['project_id'] ?? 0;
+$page = max(1, (int)($_GET['page'] ?? 1));
+$per_page = 15;
+$offset = ($page - 1) * $per_page;
 
 // Handle add task
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_task'])) {
@@ -23,13 +26,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_task'])) {
     $success = '任務新增成功！';
 }
 
-// Fetch tasks
+// Build query for count
+$count_sql = "SELECT COUNT(*) as total FROM tasks WHERE 1=1";
+$count_params = [];
+
+if ($project_filter) {
+    $count_sql .= " AND project_id = ?";
+    $count_params[] = $project_filter;
+}
+
+total = db_fetch_one($count_sql, $count_params)['total'] ?? 0;
+$total_pages = ceil($total / $per_page);
+
+// Fetch tasks with pagination
 $sql = "SELECT t.*, p.title as project_title, u.full_name as assignee_name 
         FROM tasks t 
         JOIN projects p ON t.project_id = p.id 
         LEFT JOIN users u ON t.assigned_to_id = u.id";
 if ($project_filter) $sql .= " WHERE t.project_id = " . (int)$project_filter;
-$sql .= " ORDER BY t.due_date ASC, t.priority DESC";
+$sql .= " ORDER BY t.due_date ASC, t.priority DESC LIMIT $per_page OFFSET $offset";
 $tasks = db_fetch_all($sql);
 
 $projects = db_fetch_all("SELECT id, title FROM projects ORDER BY title");
@@ -103,6 +118,27 @@ $status_labels = ['todo'=>'待辦','in_progress'=>'進行中','review'=>'審核'
                 </table>
             </div>
         </div>
+        
+        <!-- Pagination -->
+        <?php if ($total_pages > 1): ?>
+        <div class="d-flex justify-content-center mt-3">
+            <nav>
+                <ul class="pagination">
+                    <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?page=<?= $page-1 ?>&project_id=<?= $project_filter ?>">上一頁</a>
+                    </li>
+                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                    <li class="page-item <?= $i == $page ? 'active' : '' ?>">
+                        <a class="page-link" href="?page=<?= $i ?>&project_id=<?= $project_filter ?>"><?= $i ?></a>
+                    </li>
+                    <?php endfor; ?>
+                    <li class="page-item <?= $page >= $total_pages ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?page=<?= $page+1 ?>&project_id=<?= $project_filter ?>">下一頁</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -120,7 +156,7 @@ $status_labels = ['todo'=>'待辦','in_progress'=>'進行中','review'=>'審核'
                             <?php foreach ($projects as $pr): ?>
                             <option value="<?= $pr['id'] ?>"><?= htmlspecialchars($pr['title']) ?></option>
                             <?php endforeach; ?>
-                        </select>
+                            </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">任務名稱 *</label>
