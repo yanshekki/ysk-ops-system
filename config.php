@@ -31,16 +31,6 @@ function current_user() {
     return $_SESSION['user'] ?? null;
 }
 
-function is_logged_in() {
-    return isset($_SESSION['user_id']);
-}
-
-function has_role($required_role) {
-    $user = current_user();
-    if (!$user) return false;
-    $roles_hierarchy = ['viewer' => 1, 'developer' => 2, 'pm' => 3, 'finance' => 3, 'admin' => 10];
-    $user_level = $roles_hierarchy[$user['role']] ?? 0;
-    $required_level = $roles_hierarchy[$required_role] ?? 0;
-    return $user_level >= $required_level;
-}
+// 注意：is_logged_in() 和 has_role() 已移到 includes/auth.php
+// 請確保所有頁面都有 require_once 'includes/auth.php';
 ?>
