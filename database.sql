@@ -1,5 +1,5 @@
 -- YSK Ops System v2.0 Database Schema
--- 完整 schema 涵蓋所有已實現功能
+-- 完整 schema 涵蓋所有已實現功能 + FULLTEXT INDEX 提升搜尋效能
 -- Run this in phpMyAdmin or MySQL to create the database
 
 CREATE DATABASE IF NOT EXISTS ysk_ops CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -31,7 +31,8 @@ CREATE TABLE clients (
     notes TEXT,
     status ENUM('active', 'inactive', 'lead') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FULLTEXT KEY ft_clients (company_name, contact_person, email, notes)
 );
 
 -- 3. Projects
@@ -52,7 +53,8 @@ CREATE TABLE projects (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
     FOREIGN KEY (assigned_pm_id) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    FULLTEXT KEY ft_projects (title, description)
 );
 
 -- 4. Tasks
@@ -120,7 +122,8 @@ CREATE TABLE knowledge_base (
     category ENUM('sop', 'technical', 'client', 'other') DEFAULT 'other',
     created_by INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    FULLTEXT KEY ft_knowledge (title, content)
 );
 
 -- 8. Notifications
@@ -158,7 +161,7 @@ INSERT INTO clients (company_name, contact_person, email, phone, status) VALUES
 ('Retail Brand HK', '李小姐', 'contact@retailbrand.hk', '+852 9876 5432', 'active');
 
 INSERT INTO projects (client_id, title, description, service_type, status, start_date, end_date, budget, progress_percent, assigned_pm_id, created_by) VALUES 
-(1, '物流ERP系統開發', '開發司橛APP及後台ERP', 'app_development', 'in_progress', '2026-01-15', '2026-06-30', 85000.00, 45, 1, 1);
+(1, '物流ERP系統開發', '開發司橫APP及後台ERP', 'app_development', 'in_progress', '2026-01-15', '2026-06-30', 85000.00, 45, 1, 1);
 
 INSERT INTO tasks (project_id, title, description, assigned_to_id, status, priority, due_date, estimated_hours) VALUES 
 (1, '需求分析會議', '與客戶討論ERP流程', 1, 'done', 'high', '2026-01-20', 8);

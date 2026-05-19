@@ -22,6 +22,40 @@ if (is_logged_in()) {
     $show_login = false;
     $user = current_user();
     
+    // Global search
+    $global_search = trim($_GET['global_search'] ?? '');
+    $global_results = [];
+    
+    if ($global_search) {
+        // Search clients
+        $global_results['clients'] = db_fetch_all(
+            "SELECT id, company_name, contact_person, email FROM clients 
+             WHERE company_name LIKE ? OR contact_person LIKE ? OR email LIKE ? 
+             LIMIT 5", 
+            ["%$global_search%", "%$global_search%", "%$global_search%"]
+        );
+        
+        // Search projects
+        $global_results['projects'] = db_fetch_all(
+            "SELECT p.id, p.title, p.status, c.company_name 
+             FROM projects p 
+             LEFT JOIN clients c ON p.client_id = c.id 
+             WHERE p.title LIKE ? OR p.description LIKE ? OR c.company_name LIKE ? 
+             LIMIT 5", 
+            ["%$global_search%", "%$global_search%", "%$global_search%"]
+        );
+        
+        // Search invoices
+        $global_results['invoices'] = db_fetch_all(
+            "SELECT i.id, i.invoice_number, i.total_amount, i.status, c.company_name 
+             FROM invoices i 
+             LEFT JOIN clients c ON i.client_id = c.id 
+             WHERE i.invoice_number LIKE ? OR c.company_name LIKE ? 
+             LIMIT 5", 
+            ["%$global_search%", "%$global_search%"]
+        );
+    }
+    
     // Dashboard stats
     $stats = [
         'clients' => db_fetch_one("SELECT COUNT(*) as c FROM clients")['c'] ?? 0,
@@ -68,6 +102,7 @@ if (is_logged_in()) {
         .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background: #0d6efd; }
         .main-content { padding: 2rem; }
         .table th { background: #f1f3f5; }
+        .global-search { max-width: 600px; margin: 0 auto 2rem; }
     </style>
 </head>
 <body>
@@ -142,13 +177,92 @@ if (is_logged_in()) {
         <div class="flex-grow-1 main-content">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h1 class="h3 mb-1">歡迎回來，<?= htmlspecialchars(explode(' ', $user['full_name'])[0]) ?>！</h1>
+                    <h1 class="h3 mb-1">歡迎回來，<?= htmlspecialchars(explode(' ', $user['full_name'])[0]) ?>!</h1>
                     <p class="text-muted mb-0">今天是 <?= date('Y年m月d日 l') ?> • YSK Limited 內部系統</p>
                 </div>
                 <div>
                     <a href="projects.php?action=new" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i> 新增項目</a>
                 </div>
             </div>
+            
+            <!-- Global Search Bar -->
+            <div class="global-search mb-4">
+                <form method="GET" class="d-flex">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" name="global_search" class="form-control form-control-lg" 
+                               value="<?= htmlspecialchars($global_search) ?>" 
+                               placeholder="全系統搜尋：客戶、項目、發票、任務...">
+                        <button type="submit" class="btn btn-primary">搜尋</button>
+                    </div>
+                </form>
+            </div>
+            
+            <?php if ($global_search): ?>
+            <!-- Global Search Results -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">搜尋結果："<?= htmlspecialchars($global_search) ?>"</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Clients Results -->
+                        <?php if (!empty($global_results['clients'])): ?>
+                        <div class="col-md-4 mb-3">
+                            <h6 class="text-primary"><i class="bi bi-people me-2"></i>客戶 (<?= count($global_results['clients']) ?>)</h6>
+                            <div class="list-group">
+                                <?php foreach ($global_results['clients'] as $c): ?>
+                                <a href="clients.php?id=<?= $c['id'] ?>" class="list-group-item list-group-item-action">
+                                    <strong><?= htmlspecialchars($c['company_name']) ?></strong><br>
+                                    <small class="text-muted"><?= htmlspecialchars($c['contact_person'] ?: $c['email']) ?></small>
+                                </a>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <!-- Projects Results -->
+                        <?php if (!empty($global_results['projects'])): ?>
+                        <div class="col-md-4 mb-3">
+                            <h6 class="text-success"><i class="bi bi-folder me-2"></i>項目 (<?= count($global_results['projects']) ?>)</h6>
+                            <div class="list-group">
+                                <?php foreach ($global_results['projects'] as $p): ?>
+                                <a href="projects.php?id=<?= $p['id'] ?>" class="list-group-item list-group-item-action">
+                                    <strong><?= htmlspecialchars($p['title']) ?></strong><br>
+                                    <small class="text-muted"><?= htmlspecialchars($p['company_name'] ?: '') ?> • <?= ucfirst(str_replace('_', ' ', $p['status'])) ?></small>
+                                </a>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <!-- Invoices Results -->
+                        <?php if (!empty($global_results['invoices'])): ?>
+                        <div class="col-md-4 mb-3">
+                            <h6 class="text-info"><i class="bi bi-receipt me-2"></i>發票 (<?= count($global_results['invoices']) ?>)</h6>
+                            <div class="list-group">
+                                <?php foreach ($global_results['invoices'] as $inv): ?>
+                                <a href="invoices.php" class="list-group-item list-group-item-action">
+                                    <strong><?= $inv['invoice_number'] ?></strong><br>
+                                    <small class="text-muted">HK$ <?= number_format($inv['total_amount'], 0) ?> • <?= htmlspecialchars($inv['company_name']) ?></small>
+                                </a>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php if (empty($global_results['clients']) && empty($global_results['projects']) && empty($global_results['invoices'])): ?>
+                        <div class="col-12">
+                            <div class="alert alert-warning mb-0">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                未找到相關結果，請嘗試不同關鍵字。
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
             
             <!-- Stats Cards -->
             <div class="row g-3 mb-4">
@@ -196,9 +310,9 @@ if (is_logged_in()) {
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
-                                    <h6 class="text-muted">待收款項</h6>
+                                    <h6 class="text-muted">總收入 (已收款)</h6>
                                     <h2 class="fw-bold mb-0">HK$ <?= number_format($stats['total_revenue'], 0) ?></h2>
-                                    <small class="text-muted"><?= $stats['invoices_pending'] ?> 張發票</small>
+                                    <small class="text-muted"><?= $stats['invoices_pending'] ?> 張待收款發票</small>
                                 </div>
                                 <i class="bi bi-currency-dollar fs-1 text-info opacity-25"></i>
                             </div>
@@ -301,7 +415,7 @@ if (is_logged_in()) {
             </div>
             
             <div class="mt-4 text-center text-muted small">
-                YSK Limited • 遠端開發團隊 • PHP + MySQL 運作系統 v1.0 • 
+                YSK Limited • 遠端開發團隊 • PHP + MySQL 運作系統 v2.0 • 
                 <a href="https://ysk.hk" target="_blank" class="text-decoration-none">ysk.hk</a>
             </div>
         </div>

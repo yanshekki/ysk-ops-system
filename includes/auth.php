@@ -32,11 +32,22 @@ function logout_user() {
     exit;
 }
 
+function is_logged_in() {
+    return isset($_SESSION['user_id']) && isset($_SESSION['user']);
+}
+
 function require_login() {
     if (!is_logged_in()) {
         header("Location: index.php?login=required");
         exit;
     }
+}
+
+function has_role($role) {
+    if (!is_logged_in()) return false;
+    $user_role = $_SESSION['user']['role'];
+    if ($user_role === 'admin') return true;
+    return $user_role === $role;
 }
 
 function log_activity($user_id, $action, $table = null, $record_id = null, $details = null) {
