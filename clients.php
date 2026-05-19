@@ -161,11 +161,11 @@ $clients = db_fetch_all($sql, $params);
                         <?php foreach ($clients as $c): ?>
                         <tr>
                             <td><?= $c['id'] ?></td>
-                            <td><strong><?= htmlspecialchars($c['company_name']) ?></strong></td>
-                            <td><?= htmlspecialchars($c['contact_person'] ?: '-') ?></td>
+                            <td><strong><?= htmlspecialchars($c['company_name'] ?? '') ?></strong></td>
+                            <td><?= htmlspecialchars($c['contact_person'] ?? '-') ?></td>
                             <td>
-                                <?= htmlspecialchars($c['email'] ?: '-') ?><br>
-                                <small class="text-muted"><?= htmlspecialchars($c['phone'] ?: '-') ?></small>
+                                <?= htmlspecialchars($c['email'] ?? '-') ?><br>
+                                <small class="text-muted"><?= htmlspecialchars($c['phone'] ?? '-') ?></small>
                             </td>
                             <td>
                                 <span class="badge bg-<?= $c['status']==='active'?'success':($c['status']==='lead'?'warning':'secondary') ?>">
@@ -197,23 +197,23 @@ $clients = db_fetch_all($sql, $params);
                                             <div class="row g-3">
                                                 <div class="col-md-6">
                                                     <label class="form-label">公司名稱 *</label>
-                                                    <input type="text" name="company_name" class="form-control" value="<?= htmlspecialchars($c['company_name']) ?>" required>
+                                                    <input type="text" name="company_name" class="form-control" value="<?= htmlspecialchars($c['company_name'] ?? '') ?>" required>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <label class="form-label">聯絡人</label>
-                                                    <input type="text" name="contact_person" class="form-control" value="<?= htmlspecialchars($c['contact_person']) ?>">
+                                                    <input type="text" name="contact_person" class="form-control" value="<?= htmlspecialchars($c['contact_person'] ?? '') ?>">
                                                 </div>
                                                 <div class="col-md-6">
                                                     <label class="form-label">電郵</label>
-                                                    <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($c['email']) ?>">
+                                                    <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($c['email'] ?? '') ?>">
                                                 </div>
                                                 <div class="col-md-6">
                                                     <label class="form-label">電話</label>
-                                                    <input type="tel" name="phone" class="form-control" value="<?= htmlspecialchars($c['phone']) ?>">
+                                                    <input type="tel" name="phone" class="form-control" value="<?= htmlspecialchars($c['phone'] ?? '') ?>">
                                                 </div>
                                                 <div class="col-12">
                                                     <label class="form-label">地址</label>
-                                                    <textarea name="address" class="form-control" rows="2"><?= htmlspecialchars($c['address']) ?></textarea>
+                                                    <textarea name="address" class="form-control" rows="2"><?= htmlspecialchars($c['address'] ?? '') ?></textarea>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <label class="form-label">狀態</label>
@@ -225,7 +225,7 @@ $clients = db_fetch_all($sql, $params);
                                                 </div>
                                                 <div class="col-12">
                                                     <label class="form-label">備註</label>
-                                                    <textarea name="notes" class="form-control" rows="3"><?= htmlspecialchars($c['notes']) ?></textarea>
+                                                    <textarea name="notes" class="form-control" rows="3"><?= htmlspecialchars($c['notes'] ?? '') ?></textarea>
                                                 </div>
                                             </div>
                                         </div>
