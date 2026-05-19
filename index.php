@@ -128,7 +128,7 @@ if (is_logged_in()) {
         <?php include 'includes/sidebar.php'; ?>
         
         <!-- Main Content -->
-        <div class="flex-grow-1 main-content">
+        <div class="flex-grow-1 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h1 class="h3 mb-1">歡迎回來，<?= htmlspecialchars(explode(' ', $user['full_name'])[0]) ?>!</h1>

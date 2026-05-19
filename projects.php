@@ -210,9 +210,9 @@ $service_options = [
                             <div class="modal-dialog modal-xl">
                                 <div class="modal-content">
                                     <form method="POST">
-                                        <div class="modal-header bg-primary text-white">
+                                        <div class="modal-header">
                                             <h5 class="modal-title">編輯項目</h5>
-                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
                                         <div class="modal-body">
                                             <input type="hidden" name="update_project" value="1">
@@ -322,9 +322,9 @@ $service_options = [
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <form method="POST">
-                <div class="modal-header bg-primary text-white">
+                <div class="modal-header">
                     <h5 class="modal-title">新增項目</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="add_project" value="1">

@@ -68,7 +68,7 @@ $total_cost = 0;
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
-                    <tfoot class="table-light">
+                    <tfoot>
                         <tr>
                             <th colspan="2">總計</th>
                             <th class="text-end"><?= number_format($total_revenue, 0) ?></th>

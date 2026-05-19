@@ -68,7 +68,7 @@ $total_all_revenue = array_sum(array_column($clients, 'total_revenue'));
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
-                    <tfoot class="table-light">
+                    <tfoot>
                         <tr>
                             <th colspan="3">總計</th>
                             <th class="text-end text-success"><strong><?= number_format($total_all_revenue, 0) ?></strong></th>

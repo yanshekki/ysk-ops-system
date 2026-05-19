@@ -57,7 +57,7 @@ $recent_notifications = db_fetch_all("
             <!-- Send Notification -->
             <div class="col-md-5">
                 <div class="card">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header">
                         <h5 class="mb-0">發送 WhatsApp 通知</h5>
                     </div>
                     <div class="card-body">
