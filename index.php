@@ -142,7 +142,7 @@ if (is_logged_in()) {
         <div class="flex-grow-1 main-content">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h1 class="h3 mb-1">歡迎回來，<?= htmlspecialchars(explode(' ', $user['full_name'])[0]) ?>！</h1>
+                    <h1 class="h3 mb-1">歡迎回來，<?= htmlspecialchars(explode(' ', $user['full_name'])[0]) ?>!</h1>
                     <p class="text-muted mb-0">今天是 <?= date('Y年m月d日 l') ?> • YSK Limited 內部系統</p>
                 </div>
                 <div>
@@ -196,9 +196,9 @@ if (is_logged_in()) {
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
-                                    <h6 class="text-muted">待收款項</h6>
+                                    <h6 class="text-muted">總收入 (已收款)</h6>
                                     <h2 class="fw-bold mb-0">HK$ <?= number_format($stats['total_revenue'], 0) ?></h2>
-                                    <small class="text-muted"><?= $stats['invoices_pending'] ?> 張發票</small>
+                                    <small class="text-muted"><?= $stats['invoices_pending'] ?> 張待收款發票</small>
                                 </div>
                                 <i class="bi bi-currency-dollar fs-1 text-info opacity-25"></i>
                             </div>
@@ -301,7 +301,7 @@ if (is_logged_in()) {
             </div>
             
             <div class="mt-4 text-center text-muted small">
-                YSK Limited • 遠端開發團隊 • PHP + MySQL 運作系統 v1.0 • 
+                YSK Limited • 遠端開發團隊 • PHP + MySQL 運作系統 v2.0 • 
                 <a href="https://ysk.hk" target="_blank" class="text-decoration-none">ysk.hk</a>
             </div>
         </div>
