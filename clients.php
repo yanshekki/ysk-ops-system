@@ -7,6 +7,9 @@ require_login();
 $success = $error = '';
 $search = $_GET['search'] ?? '';
 $status_filter = $_GET['status'] ?? '';
+$page = max(1, (int)($_GET['page'] ?? 1));
+$per_page = 15;
+$offset = ($page - 1) * $per_page;
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -37,7 +40,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Build query
+// Build query for count
+$count_sql = "SELECT COUNT(*) as total FROM clients WHERE 1=1";
+$count_params = [];
+
+if ($search) {
+    $count_sql .= " AND (company_name LIKE ? OR contact_person LIKE ? OR email LIKE ?)";
+    $count_params[] = "%$search%";
+    $count_params[] = "%$search%";
+    $count_params[] = "%$search%";
+}
+
+if ($status_filter) {
+    $count_sql .= " AND status = ?";
+    $count_params[] = $status_filter;
+}
+
+total = db_fetch_one($count_sql, $count_params)['total'] ?? 0;
+$total_pages = ceil($total / $per_page);
+
+// Fetch clients with pagination
 $sql = "SELECT * FROM clients WHERE 1=1";
 $params = [];
 
@@ -53,7 +75,7 @@ if ($status_filter) {
     $params[] = $status_filter;
 }
 
-$sql .= " ORDER BY created_at DESC";
+$sql .= " ORDER BY created_at DESC LIMIT $per_page OFFSET $offset";
 $clients = db_fetch_all($sql, $params);
 ?>
 <!DOCTYPE html>
@@ -220,6 +242,27 @@ $clients = db_fetch_all($sql, $params);
                 </table>
             </div>
         </div>
+        
+        <!-- Pagination -->
+        <?php if ($total_pages > 1): ?>
+        <div class="d-flex justify-content-center mt-3">
+            <nav>
+                <ul class="pagination">
+                    <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?page=<?= $page-1 ?>&search=<?= urlencode($search) ?>&status=<?= $status_filter ?>">上一頁</a>
+                    </li>
+                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                    <li class="page-item <?= $i == $page ? 'active' : '' ?>">
+                        <a class="page-link" href="?page=<?= $i ?>&search=<?= urlencode($search) ?>&status=<?= $status_filter ?>"><?= $i ?></a>
+                    </li>
+                    <?php endfor; ?>
+                    <li class="page-item <?= $page >= $total_pages ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?page=<?= $page+1 ?>&search=<?= urlencode($search) ?>&status=<?= $status_filter ?>">下一頁</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 
