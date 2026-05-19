@@ -6,6 +6,51 @@ require_login();
 
 $success = $error = '';
 
+// Handle generate invoice from recurring
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_invoice'])) {
+    $recurring_id = (int)$_POST['recurring_id'];
+    $recurring = db_fetch_one("SELECT * FROM recurring_invoices WHERE id = ?", [$recurring_id]);
+    
+    if ($recurring && $recurring['status'] == 'active') {
+        // Create new invoice
+        $invoice_number = 'INV-' . date('Ymd') . '-' . str_pad(rand(1,999), 3, '0', STR_PAD_LEFT);
+        
+        $invoice_data = [
+            'invoice_number' => $invoice_number,
+            'client_id' => $recurring['client_id'],
+            'project_id' => $recurring['project_id'],
+            'issue_date' => date('Y-m-d'),
+            'due_date' => date('Y-m-d', strtotime('+30 days')),
+            'subtotal' => $recurring['amount'],
+            'tax_percent' => 0,
+            'total_amount' => $recurring['amount'],
+            'status' => 'draft',
+            'notes' => $recurring['notes'] ?? '',
+            'created_by' => $_SESSION['user_id']
+        ];
+        
+        $invoice_id = db_insert('invoices', $invoice_data);
+        
+        // Update next_invoice_date based on frequency
+        $next_date = $recurring['next_invoice_date'];
+        switch ($recurring['frequency']) {
+            case 'monthly':
+                $next_date = date('Y-m-d', strtotime($next_date . ' +1 month'));
+                break;
+            case 'quarterly':
+                $next_date = date('Y-m-d', strtotime($next_date . ' +3 months'));
+                break;
+            case 'yearly':
+                $next_date = date('Y-m-d', strtotime($next_date . ' +1 year'));
+                break;
+        }
+        
+        db_update('recurring_invoices', ['next_invoice_date' => $next_date], 'id = ?', [$recurring_id]);
+        
+        $success = "已為「{$recurring['title']}」生成發票 #{$invoice_number}！";
+    }
+}
+
 // Handle create recurring invoice
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_recurring'])) {
     $data = [
@@ -98,7 +143,7 @@ $frequency_labels = [
                             <th>頻率</th>
                             <th>下次發票日</th>
                             <th>狀態</th>
-                            <th width="180">操作</th>
+                            <th width="220">操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -121,6 +166,14 @@ $frequency_labels = [
                             </td>
                             <td>
                                 <?php if ($r['status'] == 'active'): ?>
+                                    <!-- Generate Invoice Button -->
+                                    <form method="POST" class="d-inline">
+                                        <input type="hidden" name="recurring_id" value="<?= $r['id'] ?>">
+                                        <button type="submit" name="generate_invoice" class="btn btn-sm btn-success">
+                                            <i class="bi bi-file-earmark-plus me-1"></i> 生成發票
+                                        </button>
+                                    </form>
+                                    
                                     <form method="POST" class="d-inline">
                                         <input type="hidden" name="recurring_id" value="<?= $r['id'] ?>">
                                         <button type="submit" name="action" value="pause" class="btn btn-sm btn-warning">暫停</button>
