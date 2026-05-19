@@ -1,36 +1,36 @@
 <?php
-// YSK Operations System - Configuration
-// Edit these for your hosting environment
+/**
+ * YSK Ops System - 核心設定檔 (重構優化版)
+ * 職責：只做純常數定義、環境設定，並自動橋接全域工具箱
+ */
 
-define('DB_HOST', 'localhost');           // Change to your MySQL host
-define('DB_NAME', 'ysk_ops');
-define('DB_USER', 'root');                // Change to your DB username
-define('DB_PASS', '');                    // Change to your DB password
-define('DB_CHARSET', 'utf8mb4');
-
-define('SITE_NAME', 'YSK 業務運作系統');
-define('SITE_URL', 'http://localhost/ysk-ops');  // Change to your domain or hosting URL
-define('ADMIN_EMAIL', 'admin@ysk.hk');
-
-// Session settings
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_strict_mode', 1);
+// 1. 啟動全域 Session
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Error reporting (disable in production)
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// 2. 系統基礎設定常數
+define('SITE_NAME', 'YSK Ops System');
+define('SITE_URL', 'https://ops.ysk.hk');
+define('BASE_PATH', __DIR__);
 
-// Timezone
+// 3. 資料庫連線憑證
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'ysk_ops');
+define('DB_USER', 'ysk_db_user'); 
+define('DB_PASS', 'your_secure_password'); 
+define('DB_CHAR', 'utf8mb4');
+
+// 4. 開發環境錯誤調試設定
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// 5. 設定預設時區
 date_default_timezone_set('Asia/Hong_Kong');
 
-// Helper: Get current user
-function current_user() {
-    return $_SESSION['user'] ?? null;
-}
-
-// 注意：is_logged_in() 和 has_role() 已移到 includes/auth.php
-// 請確保所有頁面都有 require_once 'includes/auth.php';
-?>
+// =========================================================================
+// 🎯 核心橋接：因為絕大多數頁面都 require 了本檔案，
+// 我們在此自動幫所有頁面載入工具箱，這樣你其他幾十個頁面一個字都不用改！
+// =========================================================================
+require_once __DIR__ . '/includes/functions.php';
