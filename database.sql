@@ -1,5 +1,6 @@
--- YSK Ops System v2.6 Database Schema & Sample Data
--- 新增客戶專屬登入 (username, password_hash)
+-- YSK Ops System v2.6 Database Schema & Massive Sample Data
+-- 包含最新 SaaS 級別結構與大量測試數據 (幾十條 records per table)
+-- 密碼統一為: password
 
 CREATE DATABASE IF NOT EXISTS ki_ops CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE ki_ops;
@@ -18,9 +19,7 @@ DROP TABLE IF EXISTS users;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- ==========================================
--- 1. Users (團隊成員)
--- ==========================================
+-- 1. Users
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
@@ -35,9 +34,7 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- ==========================================
--- 2. Clients (客戶 - 新增 username, password)
--- ==========================================
+-- 2. Clients
 CREATE TABLE clients (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE,
@@ -54,9 +51,7 @@ CREATE TABLE clients (
     FULLTEXT KEY ft_clients (company_name, contact_person, email, notes)
 );
 
--- ==========================================
--- 3. Projects (專案項目)
--- ==========================================
+-- 3. Projects
 CREATE TABLE projects (
     id INT AUTO_INCREMENT PRIMARY KEY,
     client_id INT NOT NULL,
@@ -78,9 +73,7 @@ CREATE TABLE projects (
     FULLTEXT KEY ft_projects (title, description)
 );
 
--- ==========================================
--- 4. Tasks (任務追蹤)
--- ==========================================
+-- 4. Tasks
 CREATE TABLE tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
     project_id INT NOT NULL,
@@ -98,9 +91,7 @@ CREATE TABLE tasks (
     FOREIGN KEY (assigned_to_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- ==========================================
--- 5. Invoices (發票)
--- ==========================================
+-- 5. Invoices
 CREATE TABLE invoices (
     id INT AUTO_INCREMENT PRIMARY KEY,
     invoice_number VARCHAR(50) UNIQUE NOT NULL,
@@ -121,9 +112,7 @@ CREATE TABLE invoices (
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- ==========================================
--- 6. Timesheets (工時記錄)
--- ==========================================
+-- 6. Timesheets
 CREATE TABLE timesheets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -141,9 +130,7 @@ CREATE TABLE timesheets (
     FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- ==========================================
--- 7. Knowledge Base (知識庫)
--- ==========================================
+-- 7. Knowledge Base
 CREATE TABLE knowledge_base (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
@@ -155,9 +142,7 @@ CREATE TABLE knowledge_base (
     FULLTEXT KEY ft_knowledge (title, content)
 );
 
--- ==========================================
--- 8. Notifications (通知中心)
--- ==========================================
+-- 8. Notifications
 CREATE TABLE notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
     client_id INT,
@@ -169,9 +154,7 @@ CREATE TABLE notifications (
     FOREIGN KEY (sent_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- ==========================================
--- 9. Recurring Invoices (周期性發票)
--- ==========================================
+-- 9. Recurring Invoices
 CREATE TABLE recurring_invoices (
     id INT AUTO_INCREMENT PRIMARY KEY,
     client_id INT NOT NULL,
@@ -190,23 +173,463 @@ CREATE TABLE recurring_invoices (
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- =========================================================================
--- 模擬測試數據 (Sample Data) - 密碼統一為 password
--- =========================================================================
-INSERT INTO users (username, password_hash, full_name, email, role, phone, is_active) VALUES 
-('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '超級管理員', 'admin@ysk.hk', 'admin', '+852 98765432', 1),
-('jason_pm', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Jason PM', 'jason@ysk.hk', 'pm', '+852 61234567', 1);
+-- ==========================================
+-- 大量模擬數據插入 (Sample Data)
+-- ==========================================
+INSERT INTO users (username, password_hash, full_name, email, role, phone, is_active) VALUES
+('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '超級管理員', 'admin@ysk.hk', 'admin', '+852 50570395', 1),
+('paul_chan2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Paul Chan', 'paul_chan2@ysk.hk', 'developer', '+852 98845183', 1),
+('kevin_chow3', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Kevin Chow', 'kevin_chow3@ysk.hk', 'pm', '+852 79549321', 1),
+('tom_mak4', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Tom Mak', 'tom_mak4@ysk.hk', 'developer', '+852 86510804', 1),
+('jason_chan5', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Jason Chan', 'jason_chan5@ysk.hk', 'finance', '+852 89901768', 1),
+('ken_wong6', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Ken Wong', 'ken_wong6@ysk.hk', 'finance', '+852 69022631', 1),
+('ken_yip7', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Ken Yip', 'ken_yip7@ysk.hk', 'developer', '+852 79590595', 1),
+('mandy_mak8', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Mandy Mak', 'mandy_mak8@ysk.hk', 'developer', '+852 85657805', 1),
+('gary_wong9', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Gary Wong', 'gary_wong9@ysk.hk', 'developer', '+852 94957599', 1),
+('david_ho10', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'David Ho', 'david_ho10@ysk.hk', 'viewer', '+852 72153549', 1),
+('ivan_ho11', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Ivan Ho', 'ivan_ho11@ysk.hk', 'pm', '+852 97972750', 1),
+('peter_mak12', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Peter Mak', 'peter_mak12@ysk.hk', 'developer', '+852 59005994', 1),
+('chris_ng13', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Chris Ng', 'chris_ng13@ysk.hk', 'viewer', '+852 94903337', 1),
+('alex_chow14', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Alex Chow', 'alex_chow14@ysk.hk', 'developer', '+852 98457008', 1),
+('mary_lam15', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Mary Lam', 'mary_lam15@ysk.hk', 'developer', '+852 64761002', 1),
+('chris_lam16', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Chris Lam', 'chris_lam16@ysk.hk', 'developer', '+852 79848529', 1),
+('steven_yip17', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Steven Yip', 'steven_yip17@ysk.hk', 'developer', '+852 50570889', 1),
+('jason_lee18', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Jason Lee', 'jason_lee18@ysk.hk', 'developer', '+852 94443900', 1),
+('sarah_lee19', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Sarah Lee', 'sarah_lee19@ysk.hk', 'pm', '+852 83786196', 1),
+('john_chan20', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'John Chan', 'john_chan20@ysk.hk', 'viewer', '+852 68864757', 1),
+('gary_mak21', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Gary Mak', 'gary_mak21@ysk.hk', 'pm', '+852 95856956', 1),
+('mary_wong22', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Mary Wong', 'mary_wong22@ysk.hk', 'pm', '+852 77093201', 1),
+('karen_lee23', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Karen Lee', 'karen_lee23@ysk.hk', 'developer', '+852 61280387', 1),
+('john_lam24', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'John Lam', 'john_lam24@ysk.hk', 'developer', '+852 91702758', 1),
+('leo_ng25', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Leo Ng', 'leo_ng25@ysk.hk', 'pm', '+852 95685741', 1);
 
--- 插入客戶資料 (包含客戶登入 Portal 的帳號與密碼)
-INSERT INTO clients (username, password_hash, company_name, contact_person, email, phone, address, status) VALUES 
-('apex', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Apex Logistics Ltd', '陳先生', 'info@apexlogistics.hk', '+852 2345 6789', '觀塘鴻圖道 12 號', 'active'),
-('retailhk', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Retail Brand HK', '李小姐', 'contact@retailbrand.hk', '+852 9876 5432', '銅鑼灣巧明街 55 號', 'active'),
-('fintech', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'FinTech Solutions', '張總監', 'ceo@fintechsol.com', '+852 3344 5566', '中環國際金融中心', 'active');
+INSERT INTO clients (username, password_hash, company_name, contact_person, email, phone, address, status) VALUES
+('apex0', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Apex Logistics Ltd', 'Ken Lam', 'contact@apex0.com', '+852 29141019', '香港九龍觀塘道 56 號', 'lead'),
+('retail1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Retail Brand HK', 'Paul Wong', 'contact@retail1.com', '+852 22765874', '香港九龍觀塘道 56 號', 'active'),
+('fintech2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'FinTech Solutions', 'Mandy Ng', 'contact@fintech2.com', '+852 35501865', '香港九龍觀塘道 128 號', 'active'),
+('educare3', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'EduCare Learning', 'Jack Chan', 'contact@educare3.com', '+852 29623826', '香港九龍觀塘道 31 號', 'active'),
+('green4', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Green Energy Corp', 'Sarah Yip', 'contact@green4.com', '+852 22177309', '香港九龍觀塘道 13 號', 'active'),
+('web35', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Web3 Innovators', 'Jason Lam', 'contact@web35.com', '+852 30163353', '香港九龍觀塘道 97 號', 'active'),
+('healthplus6', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'HealthPlus Clinic', 'Alice Chow', 'contact@healthplus6.com', '+852 32884242', '香港九龍觀塘道 195 號', 'active'),
+('ocean7', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Ocean Trading', 'Mary Cheung', 'contact@ocean7.com', '+852 21674488', '香港九龍觀塘道 94 號', 'active'),
+('skyline8', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Skyline Design', 'Peter Ho', 'contact@skyline8.com', '+852 36873523', '香港九龍觀塘道 121 號', 'active'),
+('global9', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Global Ventures', 'Alice Ho', 'contact@global9.com', '+852 38622174', '香港九龍觀塘道 140 號', 'active'),
+('techfront10', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'TechFront HK', 'Tom Wong', 'contact@techfront10.com', '+852 23150035', '香港九龍觀塘道 181 號', 'active'),
+('smart11', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Smart Home Co', 'Alex Lee', 'contact@smart11.com', '+852 21544839', '香港九龍觀塘道 6 號', 'active'),
+('buildit12', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'BuildIt Construction', 'Kevin Yip', 'contact@buildit12.com', '+852 24520970', '香港九龍觀塘道 142 號', 'active'),
+('city13', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'City Mall Group', 'David Mak', 'contact@city13.com', '+852 28004739', '香港九龍觀塘道 24 號', 'active'),
+('fast14', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Fast Courier', 'Alice Mak', 'contact@fast14.com', '+852 27763614', '香港九龍觀塘道 155 號', 'active'),
+('foodie15', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Foodie Tech', 'Ivan Lam', 'contact@foodie15.com', '+852 27265902', '香港九龍觀塘道 52 號', 'active'),
+('media16', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Media Matrix', 'Peter Chow', 'contact@media16.com', '+852 29124403', '香港九龍觀塘道 36 號', 'active'),
+('pioneer17', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Pioneer Capital', 'Alex Mak', 'contact@pioneer17.com', '+852 35508000', '香港九龍觀塘道 34 號', 'active'),
+('sunrise18', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Sunrise Medical', 'Paul Wong', 'contact@sunrise18.com', '+852 37175967', '香港九龍觀塘道 86 號', 'active'),
+('pro19', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Pro Consulting', 'Ken Lee', 'contact@pro19.com', '+852 26861614', '香港九龍觀塘道 167 號', 'active'),
+('creative20', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Creative Studio', 'Paul Cheung', 'contact@creative20.com', '+852 37571343', '香港九龍觀塘道 30 號', 'active'),
+('urban21', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Urban Logistics', 'Leo Cheung', 'contact@urban21.com', '+852 39686036', '香港九龍觀塘道 6 號', 'active'),
+('auto22', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Auto Parts Ltd', 'Alice Wong', 'contact@auto22.com', '+852 29285090', '香港九龍觀塘道 88 號', 'active'),
+('evergreen23', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Evergreen Tech', 'Gary Wong', 'contact@evergreen23.com', '+852 35248564', '香港九龍觀塘道 16 號', 'lead'),
+('diamond24', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Diamond Jewellers', 'Ken Yip', 'contact@diamond24.com', '+852 39622934', '香港九龍觀塘道 56 號', 'active'),
+('metro25', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Metro Transport', 'Jason Lam', 'contact@metro25.com', '+852 36873130', '香港九龍觀塘道 81 號', 'active'),
+('alpha26', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Alpha Robotics', 'Jack Ho', 'contact@alpha26.com', '+852 26033734', '香港九龍觀塘道 97 號', 'active'),
+('beta27', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Beta Software', 'Gary Wong', 'contact@beta27.com', '+852 23805177', '香港九龍觀塘道 13 號', 'active'),
+('gamma28', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Gamma Security', 'Tom Chow', 'contact@gamma28.com', '+852 23204755', '香港九龍觀塘道 24 號', 'active'),
+('delta29', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Delta Chain', 'Gary Lee', 'contact@delta29.com', '+852 35205561', '香港九龍觀塘道 114 號', 'lead'),
+('omega30', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Omega Apps', 'Karen Cheung', 'contact@omega30.com', '+852 20120150', '香港九龍觀塘道 46 號', 'lead'),
+('epsilon31', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Epsilon Cloud', 'Ken Yip', 'contact@epsilon31.com', '+852 34494957', '香港九龍觀塘道 190 號', 'active'),
+('zeta32', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Zeta AI', 'Alice Wong', 'contact@zeta32.com', '+852 33454792', '香港九龍觀塘道 132 號', 'lead'),
+('theta33', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Theta Web', 'Paul Wong', 'contact@theta33.com', '+852 25895747', '香港九龍觀塘道 67 號', 'active'),
+('sigma34', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Sigma Data', 'Leo Ho', 'contact@sigma34.com', '+852 38485141', '香港九龍觀塘道 136 號', 'active');
 
-INSERT INTO projects (client_id, title, description, service_type, status, start_date, end_date, budget, progress_percent, assigned_pm_id, created_by) VALUES 
-(1, '物流 ERP 系統升級', '開發司機 APP 及重構後台 ERP', 'app_development', 'in_progress', '2026-01-15', '2026-06-30', 125000.00, 45, 2, 1),
-(2, '會員積分 App 開發', 'iOS/Android 雙平台會員 APP', 'app_development', 'review', '2025-10-01', '2026-02-28', 180000.00, 90, 2, 1);
+INSERT INTO projects (client_id, title, description, service_type, status, start_date, end_date, budget, progress_percent, assigned_pm_id, created_by) VALUES
+(22, 'App Development 系統開發 v1', '為客戶開發專屬系統', 'app_development', 'in_progress', '2025-05-01', '2026-03-28', 416000, 39, 21, 1),
+(16, 'Cloud Security 系統開發 v2', '為客戶開發專屬系統', 'cloud_security', 'in_progress', '2025-08-01', '2026-11-28', 428000, 60, 25, 1),
+(5, 'Ai Automation 系統開發 v3', '為客戶開發專屬系統', 'ai_automation', 'in_progress', '2025-11-01', '2026-06-28', 350000, 77, 3, 1),
+(26, 'App Development 系統開發 v4', '為客戶開發專屬系統', 'app_development', 'completed', '2025-08-01', '2026-01-28', 216000, 100, 19, 1),
+(5, 'App Development 系統開發 v5', '為客戶開發專屬系統', 'app_development', 'in_progress', '2025-12-01', '2026-10-28', 249000, 74, 19, 1),
+(18, 'App Development 系統開發 v6', '為客戶開發專屬系統', 'app_development', 'review', '2025-07-01', '2026-10-28', 198000, 76, 21, 1),
+(11, 'Cloud Security 系統開發 v7', '為客戶開發專屬系統', 'cloud_security', 'in_progress', '2025-11-01', '2026-12-28', 104000, 71, 3, 1),
+(21, 'Other 系統開發 v8', '為客戶開發專屬系統', 'other', 'in_progress', '2025-10-01', '2026-01-28', 270000, 79, 3, 1),
+(31, 'Web3 Blockchain 系統開發 v9', '為客戶開發專屬系統', 'web3_blockchain', 'planning', '2025-03-01', '2026-10-28', 221000, 0, 3, 1),
+(1, 'Cloud Security 系統開發 v10', '為客戶開發專屬系統', 'cloud_security', 'completed', '2025-06-01', '2026-06-28', 226000, 100, 22, 1),
+(25, 'App Development 系統開發 v11', '為客戶開發專屬系統', 'app_development', 'in_progress', '2025-01-01', '2026-09-28', 335000, 72, 3, 1),
+(28, 'Cloud Security 系統開發 v12', '為客戶開發專屬系統', 'cloud_security', 'in_progress', '2025-01-01', '2026-04-28', 255000, 31, 21, 1),
+(3, 'App Development 系統開發 v13', '為客戶開發專屬系統', 'app_development', 'completed', '2025-11-01', '2026-02-28', 203000, 100, 22, 1),
+(5, 'Ai Automation 系統開發 v14', '為客戶開發專屬系統', 'ai_automation', 'in_progress', '2025-01-01', '2026-10-28', 211000, 29, 21, 1),
+(2, 'App Development 系統開發 v15', '為客戶開發專屬系統', 'app_development', 'planning', '2025-08-01', '2026-08-28', 288000, 0, 25, 1),
+(22, 'Other 系統開發 v16', '為客戶開發專屬系統', 'other', 'in_progress', '2025-08-01', '2026-12-28', 19000, 14, 25, 1),
+(35, 'Ai Automation 系統開發 v17', '為客戶開發專屬系統', 'ai_automation', 'in_progress', '2025-06-01', '2026-09-28', 431000, 33, 11, 1),
+(30, 'App Development 系統開發 v18', '為客戶開發專屬系統', 'app_development', 'planning', '2025-07-01', '2026-09-28', 254000, 0, 3, 1),
+(32, 'App Development 系統開發 v19', '為客戶開發專屬系統', 'app_development', 'in_progress', '2025-11-01', '2026-08-28', 26000, 24, 22, 1),
+(24, 'App Development 系統開發 v20', '為客戶開發專屬系統', 'app_development', 'planning', '2025-01-01', '2026-08-28', 345000, 0, 19, 1),
+(18, 'Web3 Blockchain 系統開發 v21', '為客戶開發專屬系統', 'web3_blockchain', 'on_hold', '2025-10-01', '2026-11-28', 121000, 78, 25, 1),
+(10, 'Cloud Security 系統開發 v22', '為客戶開發專屬系統', 'cloud_security', 'review', '2025-05-01', '2026-09-28', 104000, 10, 19, 1),
+(14, 'App Development 系統開發 v23', '為客戶開發專屬系統', 'app_development', 'in_progress', '2025-01-01', '2026-11-28', 335000, 68, 11, 1),
+(25, 'Web3 Blockchain 系統開發 v24', '為客戶開發專屬系統', 'web3_blockchain', 'review', '2025-04-01', '2026-09-28', 376000, 16, 11, 1),
+(8, 'Web3 Blockchain 系統開發 v25', '為客戶開發專屬系統', 'web3_blockchain', 'cancelled', '2025-04-01', '2026-03-28', 290000, 26, 11, 1),
+(26, 'Cloud Security 系統開發 v26', '為客戶開發專屬系統', 'cloud_security', 'completed', '2025-04-01', '2026-09-28', 433000, 100, 22, 1),
+(35, 'Ai Automation 系統開發 v27', '為客戶開發專屬系統', 'ai_automation', 'completed', '2025-01-01', '2026-12-28', 472000, 100, 19, 1),
+(3, 'App Development 系統開發 v28', '為客戶開發專屬系統', 'app_development', 'completed', '2025-12-01', '2026-12-28', 400000, 100, 25, 1),
+(31, 'App Development 系統開發 v29', '為客戶開發專屬系統', 'app_development', 'planning', '2025-10-01', '2026-08-28', 133000, 0, 19, 1),
+(16, 'App Development 系統開發 v30', '為客戶開發專屬系統', 'app_development', 'completed', '2025-09-01', '2026-07-28', 40000, 100, 3, 1),
+(16, 'Other 系統開發 v31', '為客戶開發專屬系統', 'other', 'completed', '2025-07-01', '2026-07-28', 201000, 100, 19, 1),
+(16, 'Ai Automation 系統開發 v32', '為客戶開發專屬系統', 'ai_automation', 'in_progress', '2025-04-01', '2026-12-28', 409000, 83, 21, 1),
+(22, 'App Development 系統開發 v33', '為客戶開發專屬系統', 'app_development', 'review', '2025-11-01', '2026-12-28', 497000, 35, 11, 1),
+(15, 'Web3 Blockchain 系統開發 v34', '為客戶開發專屬系統', 'web3_blockchain', 'completed', '2025-08-01', '2026-10-28', 84000, 100, 11, 1),
+(24, 'App Development 系統開發 v35', '為客戶開發專屬系統', 'app_development', 'planning', '2025-07-01', '2026-11-28', 122000, 0, 21, 1),
+(8, 'App Development 系統開發 v36', '為客戶開發專屬系統', 'app_development', 'review', '2025-08-01', '2026-11-28', 354000, 48, 19, 1),
+(19, 'App Development 系統開發 v37', '為客戶開發專屬系統', 'app_development', 'planning', '2025-03-01', '2026-07-28', 494000, 0, 22, 1),
+(5, 'Ai Automation 系統開發 v38', '為客戶開發專屬系統', 'ai_automation', 'in_progress', '2025-12-01', '2026-06-28', 82000, 52, 21, 1),
+(29, 'Ai Automation 系統開發 v39', '為客戶開發專屬系統', 'ai_automation', 'review', '2025-04-01', '2026-06-28', 317000, 31, 21, 1),
+(29, 'App Development 系統開發 v40', '為客戶開發專屬系統', 'app_development', 'in_progress', '2025-07-01', '2026-06-28', 154000, 43, 22, 1),
+(33, 'Cloud Security 系統開發 v41', '為客戶開發專屬系統', 'cloud_security', 'review', '2025-11-01', '2026-08-28', 484000, 31, 25, 1),
+(13, 'Web3 Blockchain 系統開發 v42', '為客戶開發專屬系統', 'web3_blockchain', 'planning', '2025-03-01', '2026-12-28', 213000, 0, 22, 1),
+(5, 'Cloud Security 系統開發 v43', '為客戶開發專屬系統', 'cloud_security', 'in_progress', '2025-01-01', '2026-03-28', 165000, 77, 19, 1),
+(11, 'Cloud Security 系統開發 v44', '為客戶開發專屬系統', 'cloud_security', 'planning', '2025-09-01', '2026-04-28', 214000, 0, 3, 1),
+(4, 'App Development 系統開發 v45', '為客戶開發專屬系統', 'app_development', 'planning', '2025-01-01', '2026-03-28', 83000, 0, 11, 1);
 
-INSERT INTO invoices (invoice_number, client_id, project_id, issue_date, due_date, subtotal, tax_percent, total_amount, status, notes, created_by) VALUES 
-('INV-20260115-001', 1, 1, '2026-01-15', '2026-01-30', 37500.00, 0, 37500.00, 'paid', '第一期訂金 (30%)', 1),
-('INV-20260401-002', 1, 1, '2026-04-01', '2026-04-15', 50000.00, 0, 50000.00, 'sent', '第二期開發款 (40%)', 1);
+INSERT INTO tasks (project_id, title, description, assigned_to_id, status, priority, due_date, estimated_hours) VALUES
+(20, '模組開發與測試 #1', '處理前端及後端對接', 12, 'done', 'high', '2026-07-15', 31),
+(22, '模組開發與測試 #2', '處理前端及後端對接', 8, 'in_progress', 'high', '2026-10-15', 18),
+(42, '模組開發與測試 #3', '處理前端及後端對接', 4, 'done', 'urgent', '2026-09-15', 4),
+(11, '模組開發與測試 #4', '處理前端及後端對接', 18, 'review', 'medium', '2026-02-15', 24),
+(39, '模組開發與測試 #5', '處理前端及後端對接', 9, 'review', 'medium', '2026-01-15', 6),
+(27, '模組開發與測試 #6', '處理前端及後端對接', 7, 'todo', 'high', '2026-03-15', 5),
+(19, '模組開發與測試 #7', '處理前端及後端對接', 4, 'in_progress', 'urgent', '2026-11-15', 30),
+(45, '模組開發與測試 #8', '處理前端及後端對接', 23, 'in_progress', 'urgent', '2026-03-15', 13),
+(37, '模組開發與測試 #9', '處理前端及後端對接', 4, 'in_progress', 'medium', '2026-09-15', 13),
+(14, '模組開發與測試 #10', '處理前端及後端對接', 12, 'review', 'high', '2026-01-15', 29),
+(13, '模組開發與測試 #11', '處理前端及後端對接', 17, 'review', 'medium', '2026-04-15', 19),
+(20, '模組開發與測試 #12', '處理前端及後端對接', 16, 'in_progress', 'medium', '2026-09-15', 4),
+(40, '模組開發與測試 #13', '處理前端及後端對接', 18, 'done', 'low', '2026-10-15', 38),
+(3, '模組開發與測試 #14', '處理前端及後端對接', 24, 'done', 'low', '2026-05-15', 6),
+(42, '模組開發與測試 #15', '處理前端及後端對接', 4, 'in_progress', 'high', '2026-06-15', 27),
+(29, '模組開發與測試 #16', '處理前端及後端對接', 4, 'in_progress', 'medium', '2026-12-15', 39),
+(41, '模組開發與測試 #17', '處理前端及後端對接', 23, 'in_progress', 'medium', '2026-03-15', 15),
+(5, '模組開發與測試 #18', '處理前端及後端對接', 14, 'todo', 'high', '2026-09-15', 10),
+(2, '模組開發與測試 #19', '處理前端及後端對接', 15, 'todo', 'urgent', '2026-10-15', 39),
+(38, '模組開發與測試 #20', '處理前端及後端對接', 9, 'review', 'urgent', '2026-03-15', 21),
+(3, '模組開發與測試 #21', '處理前端及後端對接', 23, 'review', 'high', '2026-05-15', 29),
+(25, '模組開發與測試 #22', '處理前端及後端對接', 14, 'review', 'urgent', '2026-02-15', 29),
+(16, '模組開發與測試 #23', '處理前端及後端對接', 18, 'done', 'low', '2026-10-15', 39),
+(14, '模組開發與測試 #24', '處理前端及後端對接', 7, 'done', 'low', '2026-12-15', 31),
+(28, '模組開發與測試 #25', '處理前端及後端對接', 8, 'in_progress', 'urgent', '2026-01-15', 14),
+(5, '模組開發與測試 #26', '處理前端及後端對接', 12, 'done', 'high', '2026-08-15', 4),
+(42, '模組開發與測試 #27', '處理前端及後端對接', 24, 'done', 'high', '2026-02-15', 26),
+(21, '模組開發與測試 #28', '處理前端及後端對接', 8, 'todo', 'medium', '2026-01-15', 35),
+(35, '模組開發與測試 #29', '處理前端及後端對接', 16, 'todo', 'medium', '2026-02-15', 6),
+(41, '模組開發與測試 #30', '處理前端及後端對接', 9, 'done', 'urgent', '2026-07-15', 39),
+(26, '模組開發與測試 #31', '處理前端及後端對接', 16, 'in_progress', 'low', '2026-03-15', 12),
+(8, '模組開發與測試 #32', '處理前端及後端對接', 12, 'in_progress', 'low', '2026-11-15', 21),
+(22, '模組開發與測試 #33', '處理前端及後端對接', 12, 'done', 'medium', '2026-09-15', 21),
+(11, '模組開發與測試 #34', '處理前端及後端對接', 8, 'review', 'high', '2026-03-15', 16),
+(2, '模組開發與測試 #35', '處理前端及後端對接', 7, 'in_progress', 'urgent', '2026-01-15', 15),
+(27, '模組開發與測試 #36', '處理前端及後端對接', 2, 'review', 'low', '2026-11-15', 17),
+(5, '模組開發與測試 #37', '處理前端及後端對接', 2, 'todo', 'medium', '2026-03-15', 32),
+(13, '模組開發與測試 #38', '處理前端及後端對接', 8, 'review', 'low', '2026-11-15', 23),
+(36, '模組開發與測試 #39', '處理前端及後端對接', 17, 'review', 'medium', '2026-06-15', 6),
+(22, '模組開發與測試 #40', '處理前端及後端對接', 24, 'in_progress', 'urgent', '2026-04-15', 26),
+(32, '模組開發與測試 #41', '處理前端及後端對接', 17, 'done', 'medium', '2026-10-15', 17),
+(20, '模組開發與測試 #42', '處理前端及後端對接', 17, 'done', 'urgent', '2026-05-15', 19),
+(10, '模組開發與測試 #43', '處理前端及後端對接', 2, 'done', 'medium', '2026-07-15', 11),
+(6, '模組開發與測試 #44', '處理前端及後端對接', 24, 'review', 'high', '2026-03-15', 19),
+(8, '模組開發與測試 #45', '處理前端及後端對接', 17, 'review', 'low', '2026-08-15', 21),
+(20, '模組開發與測試 #46', '處理前端及後端對接', 17, 'in_progress', 'low', '2026-02-15', 34),
+(17, '模組開發與測試 #47', '處理前端及後端對接', 9, 'review', 'urgent', '2026-03-15', 28),
+(45, '模組開發與測試 #48', '處理前端及後端對接', 24, 'in_progress', 'low', '2026-07-15', 30),
+(42, '模組開發與測試 #49', '處理前端及後端對接', 9, 'in_progress', 'low', '2026-01-15', 17),
+(19, '模組開發與測試 #50', '處理前端及後端對接', 8, 'in_progress', 'low', '2026-11-15', 19),
+(12, '模組開發與測試 #51', '處理前端及後端對接', 15, 'in_progress', 'low', '2026-09-15', 38),
+(11, '模組開發與測試 #52', '處理前端及後端對接', 7, 'in_progress', 'low', '2026-04-15', 31),
+(25, '模組開發與測試 #53', '處理前端及後端對接', 23, 'in_progress', 'low', '2026-07-15', 10),
+(32, '模組開發與測試 #54', '處理前端及後端對接', 16, 'in_progress', 'urgent', '2026-04-15', 5),
+(2, '模組開發與測試 #55', '處理前端及後端對接', 14, 'done', 'urgent', '2026-07-15', 22),
+(12, '模組開發與測試 #56', '處理前端及後端對接', 4, 'todo', 'low', '2026-11-15', 4),
+(14, '模組開發與測試 #57', '處理前端及後端對接', 9, 'in_progress', 'medium', '2026-01-15', 8),
+(20, '模組開發與測試 #58', '處理前端及後端對接', 15, 'in_progress', 'urgent', '2026-03-15', 18),
+(37, '模組開發與測試 #59', '處理前端及後端對接', 4, 'in_progress', 'low', '2026-07-15', 32),
+(13, '模組開發與測試 #60', '處理前端及後端對接', 2, 'review', 'medium', '2026-06-15', 29),
+(35, '模組開發與測試 #61', '處理前端及後端對接', 8, 'review', 'low', '2026-03-15', 15),
+(31, '模組開發與測試 #62', '處理前端及後端對接', 14, 'done', 'low', '2026-06-15', 28),
+(21, '模組開發與測試 #63', '處理前端及後端對接', 2, 'todo', 'high', '2026-07-15', 8),
+(32, '模組開發與測試 #64', '處理前端及後端對接', 9, 'in_progress', 'urgent', '2026-12-15', 39),
+(18, '模組開發與測試 #65', '處理前端及後端對接', 17, 'review', 'medium', '2026-03-15', 31),
+(20, '模組開發與測試 #66', '處理前端及後端對接', 24, 'in_progress', 'high', '2026-08-15', 5),
+(4, '模組開發與測試 #67', '處理前端及後端對接', 24, 'done', 'low', '2026-03-15', 35),
+(28, '模組開發與測試 #68', '處理前端及後端對接', 16, 'in_progress', 'low', '2026-09-15', 23),
+(29, '模組開發與測試 #69', '處理前端及後端對接', 24, 'in_progress', 'low', '2026-08-15', 19),
+(14, '模組開發與測試 #70', '處理前端及後端對接', 7, 'in_progress', 'urgent', '2026-09-15', 8),
+(31, '模組開發與測試 #71', '處理前端及後端對接', 8, 'todo', 'high', '2026-01-15', 32),
+(1, '模組開發與測試 #72', '處理前端及後端對接', 24, 'todo', 'high', '2026-11-15', 38),
+(27, '模組開發與測試 #73', '處理前端及後端對接', 18, 'in_progress', 'medium', '2026-11-15', 8),
+(37, '模組開發與測試 #74', '處理前端及後端對接', 8, 'in_progress', 'medium', '2026-07-15', 26),
+(2, '模組開發與測試 #75', '處理前端及後端對接', 2, 'in_progress', 'medium', '2026-08-15', 27),
+(5, '模組開發與測試 #76', '處理前端及後端對接', 12, 'done', 'medium', '2026-08-15', 18),
+(45, '模組開發與測試 #77', '處理前端及後端對接', 17, 'review', 'medium', '2026-12-15', 32),
+(22, '模組開發與測試 #78', '處理前端及後端對接', 7, 'review', 'medium', '2026-01-15', 25),
+(16, '模組開發與測試 #79', '處理前端及後端對接', 8, 'todo', 'high', '2026-05-15', 32),
+(39, '模組開發與測試 #80', '處理前端及後端對接', 12, 'in_progress', 'medium', '2026-02-15', 37);
+
+INSERT INTO invoices (invoice_number, client_id, project_id, issue_date, due_date, subtotal, tax_percent, total_amount, status, notes, created_by) VALUES
+('INV-202611-001', 13, 2, '2026-01-01', '2026-02-01', 99000, 0, 99000, 'overdue', '階段性開發費用', 1),
+('INV-202602-002', 3, 22, '2026-01-01', '2026-02-01', 34000, 0, 34000, 'paid', '階段性開發費用', 1),
+('INV-202602-003', 18, 30, '2026-01-01', '2026-02-01', 9000, 0, 9000, 'paid', '階段性開發費用', 1),
+('INV-202601-004', 32, 28, '2026-01-01', '2026-02-01', 44000, 0, 44000, 'paid', '階段性開發費用', 1),
+('INV-202605-005', 8, 30, '2026-01-01', '2026-02-01', 82000, 0, 82000, 'paid', '階段性開發費用', 1),
+('INV-202602-006', 4, 30, '2026-01-01', '2026-02-01', 85000, 0, 85000, 'draft', '階段性開發費用', 1),
+('INV-202609-007', 4, 45, '2026-01-01', '2026-02-01', 88000, 0, 88000, 'paid', '階段性開發費用', 1),
+('INV-202608-008', 21, 28, '2026-01-01', '2026-02-01', 84000, 0, 84000, 'overdue', '階段性開發費用', 1),
+('INV-202609-009', 11, 23, '2026-01-01', '2026-02-01', 65000, 0, 65000, 'paid', '階段性開發費用', 1),
+('INV-202606-010', 17, 36, '2026-01-01', '2026-02-01', 5000, 0, 5000, 'paid', '階段性開發費用', 1),
+('INV-202603-011', 13, 2, '2026-01-01', '2026-02-01', 17000, 0, 17000, 'draft', '階段性開發費用', 1),
+('INV-202611-012', 3, 26, '2026-01-01', '2026-02-01', 99000, 0, 99000, 'paid', '階段性開發費用', 1),
+('INV-202609-013', 27, 43, '2026-01-01', '2026-02-01', 84000, 0, 84000, 'paid', '階段性開發費用', 1),
+('INV-202604-014', 16, 27, '2026-01-01', '2026-02-01', 44000, 0, 44000, 'paid', '階段性開發費用', 1),
+('INV-202607-015', 30, 24, '2026-01-01', '2026-02-01', 77000, 0, 77000, 'overdue', '階段性開發費用', 1),
+('INV-202605-016', 4, 30, '2026-01-01', '2026-02-01', 37000, 0, 37000, 'paid', '階段性開發費用', 1),
+('INV-202602-017', 22, 23, '2026-01-01', '2026-02-01', 25000, 0, 25000, 'sent', '階段性開發費用', 1),
+('INV-202606-018', 21, 35, '2026-01-01', '2026-02-01', 45000, 0, 45000, 'paid', '階段性開發費用', 1),
+('INV-202605-019', 31, 37, '2026-01-01', '2026-02-01', 71000, 0, 71000, 'sent', '階段性開發費用', 1),
+('INV-202607-020', 30, 42, '2026-01-01', '2026-02-01', 22000, 0, 22000, 'paid', '階段性開發費用', 1),
+('INV-202607-021', 11, 40, '2026-01-01', '2026-02-01', 60000, 0, 60000, 'overdue', '階段性開發費用', 1),
+('INV-202611-022', 12, 10, '2026-01-01', '2026-02-01', 63000, 0, 63000, 'draft', '階段性開發費用', 1),
+('INV-202601-023', 6, 2, '2026-01-01', '2026-02-01', 59000, 0, 59000, 'paid', '階段性開發費用', 1),
+('INV-202609-024', 21, 38, '2026-01-01', '2026-02-01', 14000, 0, 14000, 'paid', '階段性開發費用', 1),
+('INV-202605-025', 13, 10, '2026-01-01', '2026-02-01', 93000, 0, 93000, 'overdue', '階段性開發費用', 1),
+('INV-202608-026', 15, 34, '2026-01-01', '2026-02-01', 34000, 0, 34000, 'draft', '階段性開發費用', 1),
+('INV-202604-027', 4, 30, '2026-01-01', '2026-02-01', 47000, 0, 47000, 'cancelled', '階段性開發費用', 1),
+('INV-202605-028', 27, 43, '2026-01-01', '2026-02-01', 77000, 0, 77000, 'sent', '階段性開發費用', 1),
+('INV-202612-029', 24, 6, '2026-01-01', '2026-02-01', 76000, 0, 76000, 'paid', '階段性開發費用', 1),
+('INV-202604-030', 25, 41, '2026-01-01', '2026-02-01', 22000, 0, 22000, 'paid', '階段性開發費用', 1),
+('INV-202612-031', 11, 22, '2026-01-01', '2026-02-01', 78000, 0, 78000, 'paid', '階段性開發費用', 1),
+('INV-202611-032', 4, 36, '2026-01-01', '2026-02-01', 35000, 0, 35000, 'sent', '階段性開發費用', 1),
+('INV-202610-033', 15, 41, '2026-01-01', '2026-02-01', 99000, 0, 99000, 'paid', '階段性開發費用', 1),
+('INV-202610-034', 30, 28, '2026-01-01', '2026-02-01', 33000, 0, 33000, 'overdue', '階段性開發費用', 1),
+('INV-202605-035', 13, 31, '2026-01-01', '2026-02-01', 11000, 0, 11000, 'paid', '階段性開發費用', 1),
+('INV-202608-036', 15, 17, '2026-01-01', '2026-02-01', 18000, 0, 18000, 'overdue', '階段性開發費用', 1),
+('INV-202611-037', 5, 23, '2026-01-01', '2026-02-01', 34000, 0, 34000, 'paid', '階段性開發費用', 1),
+('INV-202605-038', 3, 21, '2026-01-01', '2026-02-01', 48000, 0, 48000, 'sent', '階段性開發費用', 1),
+('INV-202604-039', 6, 20, '2026-01-01', '2026-02-01', 40000, 0, 40000, 'paid', '階段性開發費用', 1),
+('INV-202609-040', 8, 43, '2026-01-01', '2026-02-01', 65000, 0, 65000, 'paid', '階段性開發費用', 1),
+('INV-202601-041', 2, 28, '2026-01-01', '2026-02-01', 77000, 0, 77000, 'paid', '階段性開發費用', 1),
+('INV-202602-042', 20, 20, '2026-01-01', '2026-02-01', 99000, 0, 99000, 'draft', '階段性開發費用', 1),
+('INV-202609-043', 2, 23, '2026-01-01', '2026-02-01', 17000, 0, 17000, 'paid', '階段性開發費用', 1),
+('INV-202607-044', 21, 15, '2026-01-01', '2026-02-01', 33000, 0, 33000, 'paid', '階段性開發費用', 1),
+('INV-202611-045', 30, 27, '2026-01-01', '2026-02-01', 31000, 0, 31000, 'sent', '階段性開發費用', 1),
+('INV-202610-046', 15, 23, '2026-01-01', '2026-02-01', 30000, 0, 30000, 'paid', '階段性開發費用', 1),
+('INV-202605-047', 17, 36, '2026-01-01', '2026-02-01', 61000, 0, 61000, 'sent', '階段性開發費用', 1),
+('INV-202604-048', 19, 44, '2026-01-01', '2026-02-01', 54000, 0, 54000, 'paid', '階段性開發費用', 1),
+('INV-202606-049', 11, 45, '2026-01-01', '2026-02-01', 77000, 0, 77000, 'draft', '階段性開發費用', 1),
+('INV-202610-050', 5, 27, '2026-01-01', '2026-02-01', 50000, 0, 50000, 'cancelled', '階段性開發費用', 1),
+('INV-202611-051', 10, 45, '2026-01-01', '2026-02-01', 93000, 0, 93000, 'paid', '階段性開發費用', 1),
+('INV-202609-052', 8, 30, '2026-01-01', '2026-02-01', 20000, 0, 20000, 'paid', '階段性開發費用', 1),
+('INV-202603-053', 30, 26, '2026-01-01', '2026-02-01', 95000, 0, 95000, 'sent', '階段性開發費用', 1),
+('INV-202610-054', 19, 13, '2026-01-01', '2026-02-01', 37000, 0, 37000, 'sent', '階段性開發費用', 1),
+('INV-202607-055', 21, 36, '2026-01-01', '2026-02-01', 26000, 0, 26000, 'paid', '階段性開發費用', 1),
+('INV-202612-056', 29, 39, '2026-01-01', '2026-02-01', 97000, 0, 97000, 'paid', '階段性開發費用', 1),
+('INV-202603-057', 29, 29, '2026-01-01', '2026-02-01', 18000, 0, 18000, 'paid', '階段性開發費用', 1),
+('INV-202603-058', 19, 38, '2026-01-01', '2026-02-01', 28000, 0, 28000, 'paid', '階段性開發費用', 1),
+('INV-202611-059', 24, 27, '2026-01-01', '2026-02-01', 63000, 0, 63000, 'paid', '階段性開發費用', 1),
+('INV-202609-060', 16, 21, '2026-01-01', '2026-02-01', 42000, 0, 42000, 'sent', '階段性開發費用', 1);
+
+INSERT INTO timesheets (user_id, project_id, task_id, work_date, hours, description, is_approved) VALUES
+(23, 2, 70, '2026-03-24', 4, '進行系統開發與 Debug', 0),
+(24, 38, 59, '2026-02-08', 3.5, '進行系統開發與 Debug', 0),
+(23, 31, 23, '2026-03-28', 8, '進行系統開發與 Debug', 0),
+(4, 3, 25, '2026-05-18', 6, '進行系統開發與 Debug', 0),
+(16, 25, 47, '2026-04-18', 4, '進行系統開發與 Debug', 1),
+(7, 2, 2, '2026-01-26', 8, '進行系統開發與 Debug', 1),
+(15, 30, 22, '2026-01-22', 8, '進行系統開發與 Debug', 1),
+(7, 24, 76, '2026-03-25', 2, '進行系統開發與 Debug', 1),
+(9, 44, 21, '2026-05-09', 2, '進行系統開發與 Debug', 0),
+(9, 30, 31, '2026-03-15', 6, '進行系統開發與 Debug', 0),
+(7, 20, 3, '2026-05-04', 3.5, '進行系統開發與 Debug', 1),
+(16, 2, 22, '2026-05-02', 8, '進行系統開發與 Debug', 1),
+(4, 25, 62, '2026-05-19', 3.5, '進行系統開發與 Debug', 1),
+(8, 22, 19, '2026-02-04', 2, '進行系統開發與 Debug', 1),
+(14, 26, 61, '2026-01-24', 3.5, '進行系統開發與 Debug', 1),
+(15, 11, 7, '2026-05-19', 6, '進行系統開發與 Debug', 0),
+(2, 22, 38, '2026-01-25', 8, '進行系統開發與 Debug', 1),
+(24, 5, 23, '2026-04-12', 3.5, '進行系統開發與 Debug', 1),
+(4, 18, 5, '2026-04-03', 4, '進行系統開發與 Debug', 0),
+(2, 45, 12, '2026-03-23', 6, '進行系統開發與 Debug', 1),
+(4, 1, 10, '2026-05-24', 4, '進行系統開發與 Debug', 0),
+(17, 36, 64, '2026-05-25', 3.5, '進行系統開發與 Debug', 0),
+(7, 43, 33, '2026-02-23', 8, '進行系統開發與 Debug', 1),
+(12, 19, 58, '2026-04-18', 2, '進行系統開發與 Debug', 1),
+(18, 2, 36, '2026-04-02', 4, '進行系統開發與 Debug', 1),
+(4, 8, 55, '2026-05-14', 6, '進行系統開發與 Debug', 1),
+(23, 2, 4, '2026-05-27', 3.5, '進行系統開發與 Debug', 1),
+(8, 12, 60, '2026-04-03', 4, '進行系統開發與 Debug', 1),
+(16, 21, 62, '2026-02-07', 2, '進行系統開發與 Debug', 1),
+(18, 3, 23, '2026-04-20', 6, '進行系統開發與 Debug', 1),
+(15, 29, 66, '2026-01-20', 2, '進行系統開發與 Debug', 1),
+(4, 4, 30, '2026-05-04', 3.5, '進行系統開發與 Debug', 1),
+(12, 33, 44, '2026-05-27', 8, '進行系統開發與 Debug', 1),
+(7, 18, 55, '2026-05-23', 8, '進行系統開發與 Debug', 0),
+(8, 25, 41, '2026-05-27', 3.5, '進行系統開發與 Debug', 0),
+(9, 29, 14, '2026-02-08', 2, '進行系統開發與 Debug', 1),
+(4, 18, 29, '2026-03-24', 6, '進行系統開發與 Debug', 1),
+(4, 25, 6, '2026-05-11', 2, '進行系統開發與 Debug', 0),
+(16, 17, 30, '2026-02-28', 8, '進行系統開發與 Debug', 0),
+(16, 17, 17, '2026-05-12', 3.5, '進行系統開發與 Debug', 1),
+(14, 28, 42, '2026-05-15', 3.5, '進行系統開發與 Debug', 1),
+(17, 43, 76, '2026-05-15', 4, '進行系統開發與 Debug', 0),
+(2, 45, 60, '2026-05-24', 6, '進行系統開發與 Debug', 0),
+(17, 24, 73, '2026-05-26', 8, '進行系統開發與 Debug', 1),
+(23, 2, 75, '2026-01-14', 8, '進行系統開發與 Debug', 0),
+(9, 21, 68, '2026-04-18', 2, '進行系統開發與 Debug', 1),
+(4, 15, 33, '2026-05-22', 2, '進行系統開發與 Debug', 0),
+(9, 11, 46, '2026-04-18', 4, '進行系統開發與 Debug', 0),
+(2, 45, 23, '2026-04-14', 6, '進行系統開發與 Debug', 1),
+(8, 30, 24, '2026-05-15', 3.5, '進行系統開發與 Debug', 1),
+(12, 17, 65, '2026-02-14', 4, '進行系統開發與 Debug', 1),
+(2, 23, 67, '2026-04-10', 8, '進行系統開發與 Debug', 1),
+(14, 4, 30, '2026-01-20', 8, '進行系統開發與 Debug', 1),
+(18, 37, 7, '2026-02-28', 8, '進行系統開發與 Debug', 0),
+(14, 24, 15, '2026-04-03', 3.5, '進行系統開發與 Debug', 1),
+(4, 39, 44, '2026-02-16', 8, '進行系統開發與 Debug', 0),
+(2, 13, 2, '2026-02-23', 8, '進行系統開發與 Debug', 0),
+(4, 10, 48, '2026-01-14', 3.5, '進行系統開發與 Debug', 1),
+(23, 26, 40, '2026-01-13', 2, '進行系統開發與 Debug', 0),
+(8, 1, 14, '2026-02-23', 8, '進行系統開發與 Debug', 0),
+(12, 11, 12, '2026-05-14', 4, '進行系統開發與 Debug', 1),
+(8, 20, 16, '2026-03-24', 2, '進行系統開發與 Debug', 1),
+(9, 13, 60, '2026-04-04', 3.5, '進行系統開發與 Debug', 1),
+(15, 33, 40, '2026-04-15', 3.5, '進行系統開發與 Debug', 1),
+(15, 30, 5, '2026-05-09', 2, '進行系統開發與 Debug', 0),
+(8, 32, 20, '2026-03-01', 3.5, '進行系統開發與 Debug', 1),
+(18, 5, 41, '2026-03-12', 4, '進行系統開發與 Debug', 0),
+(24, 5, 23, '2026-05-11', 2, '進行系統開發與 Debug', 0),
+(16, 27, 43, '2026-05-24', 6, '進行系統開發與 Debug', 0),
+(15, 6, 75, '2026-04-22', 2, '進行系統開發與 Debug', 1),
+(9, 21, 23, '2026-01-20', 8, '進行系統開發與 Debug', 1),
+(14, 43, 6, '2026-04-18', 2, '進行系統開發與 Debug', 0),
+(2, 45, 12, '2026-03-23', 8, '進行系統開發與 Debug', 0),
+(16, 4, 39, '2026-03-24', 8, '進行系統開發與 Debug', 0),
+(23, 27, 18, '2026-01-08', 4, '進行系統開發與 Debug', 0),
+(16, 17, 3, '2026-02-09', 2, '進行系統開發與 Debug', 0),
+(14, 18, 48, '2026-02-23', 3.5, '進行系統開發與 Debug', 1),
+(17, 6, 50, '2026-05-01', 3.5, '進行系統開發與 Debug', 0),
+(23, 11, 41, '2026-03-05', 4, '進行系統開發與 Debug', 0),
+(4, 22, 60, '2026-05-23', 2, '進行系統開發與 Debug', 0),
+(24, 21, 62, '2026-04-03', 6, '進行系統開發與 Debug', 1),
+(14, 15, 68, '2026-05-18', 8, '進行系統開發與 Debug', 0),
+(17, 33, 56, '2026-05-24', 8, '進行系統開發與 Debug', 0),
+(15, 19, 78, '2026-05-09', 2, '進行系統開發與 Debug', 1),
+(8, 25, 41, '2026-05-16', 4, '進行系統開發與 Debug', 0),
+(8, 40, 6, '2026-01-25', 6, '進行系統開發與 Debug', 1),
+(23, 30, 27, '2026-05-03', 8, '進行系統開發與 Debug', 1),
+(18, 11, 5, '2026-04-18', 2, '進行系統開發與 Debug', 1),
+(17, 32, 28, '2026-01-09', 3.5, '進行系統開發與 Debug', 1),
+(8, 12, 57, '2026-03-24', 2, '進行系統開發與 Debug', 1),
+(16, 42, 65, '2026-05-13', 2, '進行系統開發與 Debug', 0),
+(18, 30, 62, '2026-01-22', 2, '進行系統開發與 Debug', 0),
+(17, 2, 70, '2026-04-04', 4, '進行系統開發與 Debug', 1),
+(4, 30, 63, '2026-04-06', 4, '進行系統開發與 Debug', 0),
+(7, 3, 24, '2026-01-08', 2, '進行系統開發與 Debug', 0),
+(7, 27, 43, '2026-04-15', 6, '進行系統開發與 Debug', 1),
+(4, 38, 25, '2026-05-27', 3.5, '進行系統開發與 Debug', 1),
+(4, 21, 28, '2026-02-14', 4, '進行系統開發與 Debug', 0),
+(15, 23, 14, '2026-02-23', 8, '進行系統開發與 Debug', 0),
+(15, 43, 67, '2026-05-02', 8, '進行系統開發與 Debug', 1);
+
+INSERT INTO knowledge_base (title, content, category, created_by) VALUES
+('內部知識文檔 #1', '這是一篇關於 other 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'other', 1),
+('內部知識文檔 #2', '這是一篇關於 other 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'other', 1),
+('內部知識文檔 #3', '這是一篇關於 other 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'other', 1),
+('內部知識文檔 #4', '這是一篇關於 sop 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'sop', 1),
+('內部知識文檔 #5', '這是一篇關於 client 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'client', 1),
+('內部知識文檔 #6', '這是一篇關於 client 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'client', 1),
+('內部知識文檔 #7', '這是一篇關於 technical 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'technical', 1),
+('內部知識文檔 #8', '這是一篇關於 other 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'other', 1),
+('內部知識文檔 #9', '這是一篇關於 other 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'other', 1),
+('內部知識文檔 #10', '這是一篇關於 sop 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'sop', 1),
+('內部知識文檔 #11', '這是一篇關於 client 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'client', 1),
+('內部知識文檔 #12', '這是一篇關於 client 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'client', 1),
+('內部知識文檔 #13', '這是一篇關於 sop 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'sop', 1),
+('內部知識文檔 #14', '這是一篇關於 technical 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'technical', 1),
+('內部知識文檔 #15', '這是一篇關於 other 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'other', 1),
+('內部知識文檔 #16', '這是一篇關於 client 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'client', 1),
+('內部知識文檔 #17', '這是一篇關於 client 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'client', 1),
+('內部知識文檔 #18', '這是一篇關於 technical 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'technical', 1),
+('內部知識文檔 #19', '這是一篇關於 client 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'client', 1),
+('內部知識文檔 #20', '這是一篇關於 technical 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'technical', 1),
+('內部知識文檔 #21', '這是一篇關於 client 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'client', 1),
+('內部知識文檔 #22', '這是一篇關於 client 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'client', 1),
+('內部知識文檔 #23', '這是一篇關於 other 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'other', 1),
+('內部知識文檔 #24', '這是一篇關於 technical 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'technical', 1),
+('內部知識文檔 #25', '這是一篇關於 sop 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'sop', 1),
+('內部知識文檔 #26', '這是一篇關於 sop 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'sop', 1),
+('內部知識文檔 #27', '這是一篇關於 sop 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'sop', 1),
+('內部知識文檔 #28', '這是一篇關於 sop 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'sop', 1),
+('內部知識文檔 #29', '這是一篇關於 sop 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'sop', 1),
+('內部知識文檔 #30', '這是一篇關於 other 的詳細教學指南。\n1. 步驟一\n2. 步驟二\n3. 完成', 'other', 1);
+
+INSERT INTO notifications (client_id, type, message, sent_by) VALUES
+(22, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(25, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(6, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(16, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(23, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(31, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(4, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(24, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(13, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(3, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(33, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(20, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(35, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(5, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(22, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(30, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(14, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(8, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(6, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(34, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(33, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(23, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(30, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(28, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(5, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(29, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(23, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(4, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(35, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(12, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(22, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(30, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(11, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(30, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(34, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(34, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(6, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(19, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(15, 'whatsapp', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1),
+(34, 'email', '溫馨提示：您的項目進度已有更新，請登入 Portal 查看。', 1);
+
+INSERT INTO recurring_invoices (client_id, project_id, title, amount, frequency, start_date, next_invoice_date, status, notes, created_by) VALUES
+(21, 38, '定期維護合約 #1', 5000, 'quarterly', '2026-01-01', '2026-06-01', 'active', '伺服器及系統維護月費', 1),
+(33, 44, '定期維護合約 #2', 2000, 'yearly', '2026-01-01', '2026-06-01', 'ended', '伺服器及系統維護月費', 1),
+(13, 21, '定期維護合約 #3', 2000, 'yearly', '2026-01-01', '2026-06-01', 'paused', '伺服器及系統維護月費', 1),
+(8, 20, '定期維護合約 #4', 3000, 'quarterly', '2026-01-01', '2026-06-01', 'active', '伺服器及系統維護月費', 1),
+(9, 44, '定期維護合約 #5', 3000, 'monthly', '2026-01-01', '2026-06-01', 'active', '伺服器及系統維護月費', 1),
+(35, 12, '定期維護合約 #6', 1000, 'monthly', '2026-01-01', '2026-06-01', 'ended', '伺服器及系統維護月費', 1),
+(35, 27, '定期維護合約 #7', 6000, 'yearly', '2026-01-01', '2026-06-01', 'ended', '伺服器及系統維護月費', 1),
+(19, 14, '定期維護合約 #8', 3000, 'yearly', '2026-01-01', '2026-06-01', 'paused', '伺服器及系統維護月費', 1),
+(6, 44, '定期維護合約 #9', 6000, 'yearly', '2026-01-01', '2026-06-01', 'paused', '伺服器及系統維護月費', 1),
+(25, 45, '定期維護合約 #10', 4000, 'yearly', '2026-01-01', '2026-06-01', 'ended', '伺服器及系統維護月費', 1),
+(16, 21, '定期維護合約 #11', 8000, 'quarterly', '2026-01-01', '2026-06-01', 'ended', '伺服器及系統維護月費', 1),
+(8, 1, '定期維護合約 #12', 3000, 'quarterly', '2026-01-01', '2026-06-01', 'ended', '伺服器及系統維護月費', 1),
+(6, 17, '定期維護合約 #13', 2000, 'yearly', '2026-01-01', '2026-06-01', 'active', '伺服器及系統維護月費', 1),
+(17, 30, '定期維護合約 #14', 10000, 'monthly', '2026-01-01', '2026-06-01', 'active', '伺服器及系統維護月費', 1),
+(22, 17, '定期維護合約 #15', 7000, 'quarterly', '2026-01-01', '2026-06-01', 'active', '伺服器及系統維護月費', 1),
+(22, 15, '定期維護合約 #16', 7000, 'yearly', '2026-01-01', '2026-06-01', 'ended', '伺服器及系統維護月費', 1),
+(27, 45, '定期維護合約 #17', 5000, 'yearly', '2026-01-01', '2026-06-01', 'paused', '伺服器及系統維護月費', 1),
+(22, 38, '定期維護合約 #18', 2000, 'monthly', '2026-01-01', '2026-06-01', 'ended', '伺服器及系統維護月費', 1),
+(4, 21, '定期維護合約 #19', 2000, 'yearly', '2026-01-01', '2026-06-01', 'active', '伺服器及系統維護月費', 1),
+(20, 24, '定期維護合約 #20', 10000, 'quarterly', '2026-01-01', '2026-06-01', 'paused', '伺服器及系統維護月費', 1),
+(3, 10, '定期維護合約 #21', 1000, 'quarterly', '2026-01-01', '2026-06-01', 'paused', '伺服器及系統維護月費', 1),
+(27, 31, '定期維護合約 #22', 9000, 'monthly', '2026-01-01', '2026-06-01', 'ended', '伺服器及系統維護月費', 1),
+(6, 21, '定期維護合約 #23', 6000, 'yearly', '2026-01-01', '2026-06-01', 'ended', '伺服器及系統維護月費', 1),
+(24, 30, '定期維護合約 #24', 4000, 'quarterly', '2026-01-01', '2026-06-01', 'active', '伺服器及系統維護月費', 1),
+(20, 44, '定期維護合約 #25', 9000, 'monthly', '2026-01-01', '2026-06-01', 'ended', '伺服器及系統維護月費', 1);
