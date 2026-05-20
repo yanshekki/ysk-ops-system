@@ -43,11 +43,36 @@ function require_login() {
     }
 }
 
+// 檢查單一角色 (Admin 永遠回傳 true)
 function has_role($role) {
     if (!is_logged_in()) return false;
     $user_role = $_SESSION['user']['role'];
-    if ($user_role === 'admin') return true;
+    if ($user_role === 'admin') return true; 
     return $user_role === $role;
+}
+
+// 🔥 新增：檢查是否擁有陣列中「任何一個」角色 (Admin 永遠回傳 true)
+function has_any_role($allowed_roles) {
+    if (!is_logged_in()) return false;
+    $user_role = $_SESSION['user']['role'] ?? 'viewer';
+    if ($user_role === 'admin') return true; 
+    return in_array($user_role, $allowed_roles);
+}
+
+// 🔥 新增：強制攔截頁面，沒有權限則直接踢出
+function require_any_role($allowed_roles) {
+    if (!has_any_role($allowed_roles)) {
+        die("
+        <div style='display:flex; height:100vh; align-items:center; justify-content:center; background-color:#f8fafc; font-family:sans-serif;'>
+            <div style='text-align:center; background:#fff; padding:40px 60px; border-radius:16px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);'>
+                <h1 style='font-size:4rem; margin:0;'>🛑</h1>
+                <h2 style='color:#ef4444; margin-top:20px;'>拒絕訪問 (Access Denied)</h2>
+                <p style='color:#64748b; font-size:1.1rem; margin-bottom:30px;'>您的帳號角色 (<b>" . strtoupper($_SESSION['user']['role']) . "</b>) 權限不足以訪問此頁面。</p>
+                <a href='index.php' style='background:#4f46e5; color:#fff; padding:10px 24px; text-decoration:none; border-radius:8px; font-weight:bold;'>返回控制台</a>
+            </div>
+        </div>
+        ");
+    }
 }
 
 function log_activity($user_id, $action, $table = null, $record_id = null, $details = null) {

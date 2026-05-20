@@ -3,6 +3,7 @@ require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_login();
+require_any_role(['pm', 'finance']);
 
 // 權限檢查：限制只有 admin, pm, finance 可以查看財務相關報表
 $current_role = $_SESSION['user']['role'] ?? 'viewer';

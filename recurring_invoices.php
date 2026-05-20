@@ -3,6 +3,7 @@ require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_login();
+require_any_role(['pm', 'finance', 'viewer']);
 
 $success = $error = '';
 

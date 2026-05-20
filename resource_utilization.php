@@ -3,6 +3,7 @@ require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_login();
+require_any_role(['pm']);
 
 // 權限檢查：限制只有 admin, pm 可以查看資源利用率
 $current_role = $_SESSION['user']['role'] ?? 'viewer';
