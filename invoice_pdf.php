@@ -2,15 +2,27 @@
 require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
-require_login();
+
+// 啟動 Session (確保沒有重複啟動)
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// 驗證登入狀態 (支援後台員工 或 Portal 客戶)
+$is_staff = is_logged_in();
+$is_client = isset($_SESSION['client_auth']);
+
+if (!$is_staff && !$is_client) {
+    die('拒絕訪問 Access Denied：請先登入系統。');
+}
 
 $invoice_id = (int)($_GET['id'] ?? 0);
 
 if (!$invoice_id) {
-    die('Invalid invoice ID');
+    die('無效的發票編號 (Invalid invoice ID)');
 }
 
-// Fetch invoice details
+// 獲取發票詳情
 $invoice = db_fetch_one(
     "SELECT i.*, c.company_name, c.contact_person, c.email, c.phone, c.address, p.title as project_title
      FROM invoices i
@@ -21,7 +33,14 @@ $invoice = db_fetch_one(
 );
 
 if (!$invoice) {
-    die('Invoice not found');
+    die('找不到該發票 (Invoice not found)');
+}
+
+// 🔥 核心安全限制：如果登入的身份是「客戶」，嚴格檢查該發票是否屬於他！
+if (!$is_staff && $is_client) {
+    if ($invoice['client_id'] != $_SESSION['client_auth']['id']) {
+        die('拒絕訪問 Access Denied：您無權查看其他公司的發票。');
+    }
 }
 
 // Professional PDF-ready HTML
@@ -298,9 +317,6 @@ header('Content-Type: text/html; charset=utf-8');
         </div>
         <div class="action-buttons">
             <button onclick="window.print()" class="btn btn-print">🖨️ 列印 / 下載 PDF</button>
-            <?php if ($invoice['status'] !== 'paid'): ?>
-                <a href="stripe_checkout.php?invoice_id=<?= $invoice['id'] ?>" class="btn btn-pay">💳 前往線上付款</a>
-            <?php endif; ?>
         </div>
     </div>
 
@@ -314,13 +330,12 @@ header('Content-Type: text/html; charset=utf-8');
             
             <div class="inv-header">
                 <div>
-                    <!-- 修正 Logo 顯示：確保列印在白紙上也能清晰顯示，移除多餘文字 -->
                     <img src="https://ysk.hk/logo.svg" alt="YSK Limited" style="height: 48px; width: auto; margin-bottom: 15px; filter: brightness(0);">
                     <div class="company-address">
                         <strong>YSK LIMITED</strong><br>
-                        Tin Shui Wai, Hong Kong<br>
+                        Hong Kong<br>
                         Tel: +852 6160 4242 | Web: www.ysk.hk<br>
-                        Email: billing@ysk.hk
+                        Email: email@ysk.hk
                     </div>
                 </div>
                 <div>
@@ -427,24 +442,14 @@ header('Content-Type: text/html; charset=utf-8');
                 </table>
             </div>
 
-            <!-- 付款方式分雙欄，更專業 -->
             <div class="payment-grid">
                 <div class="payment-box">
                     <strong>1. Bank Transfer / FPS (銀行轉賬/轉數快)</strong>
                     Bank: HSBC (Hong Kong)<br>
                     Account Name: YSK LIMITED<br>
-                    A/C No: 123-456789-838<br>
-                    FPS ID: 1234567<br>
+                    A/C No: 691-239008-838<br>
+                    FPS ID: +85261604242<br>
                     <span style="color: var(--text-muted); font-size: 8pt; display:block; margin-top: 5px;">* Please send the receipt to billing@ysk.hk after payment.</span>
-                </div>
-                <div class="payment-box">
-                    <strong>2. Online Payment (線上信用卡支付)</strong>
-                    You can securely pay this invoice online via Stripe (Visa, Mastercard, Apple Pay, Google Pay).<br><br>
-                    <?php if ($invoice['status'] === 'paid'): ?>
-                        <span style="color: #166534; font-weight: 600; font-size: 10pt;">✔ Payment received. Thank you!</span>
-                    <?php else: ?>
-                        Use the <span style="color: var(--brand-color); font-weight: 600;">"Pay Now"</span> button on the digital invoice portal to proceed with online payment.
-                    <?php endif; ?>
                 </div>
             </div>
 

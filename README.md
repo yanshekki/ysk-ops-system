@@ -22,7 +22,7 @@
 ### 2. 運作與財務
 - 工時記錄
 - 利潤分析 + 預測
-- 發票管理 + Stripe 支付
+- 發票管理
 - 週期性發票
 
 ### 3. CEO 決策工具
@@ -45,12 +45,11 @@
 - PHP 8+ + PDO
 - MySQL
 - Bootstrap 5
-- Stripe API
 
 ## 安裝步驟
 1. Clone 或下載 repo
 2. 導入 `database.sql`
-3. 修改 `config.php` (資料庫 + Stripe Key)
+3. 修改 `config.php` (資料庫)
 4. 上傳到 Web Hosting
 5. 訪問 `index.php` 登入使用
 
