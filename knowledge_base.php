@@ -3,7 +3,6 @@ require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_login();
-require_any_role(['pm', 'developer', 'finance', 'viewer']);
 
 $success = $error = '';
 $current_user_id = $_SESSION['user_id'];
@@ -16,28 +15,32 @@ $per_page = 12; // 每頁顯示 12 篇文章 (4行 x 3欄 或 3行 x 4欄)
 $offset = ($page - 1) * $per_page;
 
 // ==============================================
-// 處理表單提交 (新增、編輯、刪除)
+// 處理表單提交 (新增、編輯、刪除) - 🛡️ 加入後端權限驗證
 // ==============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // 1. 新增文章
+    // 1. 新增文章 (僅限 Admin / PM)
     if (isset($_POST['add_article'])) {
-        $data = [
-            'title' => trim($_POST['title']),
-            'content' => trim($_POST['content']),
-            'category' => $_POST['category'],
-            'created_by' => $current_user_id
-        ];
-        
-        if (!empty($data['title']) && !empty($data['content'])) {
-            db_insert('knowledge_base', $data);
-            $success = '文章已成功發佈至知識庫！';
+        if (!$is_management) {
+            $error = '權限不足！您沒有新增知識庫文章的權限。';
         } else {
-            $error = '請填寫完整的文章標題與內容。';
+            $data = [
+                'title' => trim($_POST['title']),
+                'content' => trim($_POST['content']),
+                'category' => $_POST['category'],
+                'created_by' => $current_user_id
+            ];
+            
+            if (!empty($data['title']) && !empty($data['content'])) {
+                db_insert('knowledge_base', $data);
+                $success = '文章已成功發佈至知識庫！';
+            } else {
+                $error = '請填寫完整的文章標題與內容。';
+            }
         }
     }
     
-    // 2. 編輯文章
+    // 2. 編輯文章 (僅限 作者本身 或 Admin / PM)
     elseif (isset($_POST['edit_article'])) {
         $article_id = (int)$_POST['article_id'];
         
@@ -53,11 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             db_update('knowledge_base', $data, 'id = ?', [$article_id]);
             $success = '文章內容已成功更新！';
         } else {
-            $error = '權限不足！您只能修改自己發佈的文章。';
+            $error = '權限不足！您只能修改自己發佈的文章，或請聯絡管理員。';
         }
     }
     
-    // 3. 刪除文章
+    // 3. 刪除文章 (僅限 作者本身 或 Admin / PM)
     elseif (isset($_POST['delete_article'])) {
         $article_id = (int)$_POST['delete_article_id'];
         
@@ -68,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             db_delete('knowledge_base', 'id = ?', [$article_id]);
             $success = '文章已從知識庫中徹底移除！';
         } else {
-            $error = '權限不足！您只能刪除自己發佈的文章。';
+            $error = '權限不足！您只能刪除自己發佈的文章，或請聯絡管理員。';
         }
     }
 }
@@ -137,9 +140,12 @@ $categories = [
                     </div>
                 </div>
                 <div>
+                    <!-- 🛡️ 前端權限：只有管理層 (Admin, PM) 能夠看到新增按鈕 -->
+                    <?php if ($is_management): ?>
                     <button class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addArticleModal">
                         <i class="bi bi-pencil-square me-1"></i> 撰寫新文章
                     </button>
+                    <?php endif; ?>
                 </div>
             </div>
             
@@ -177,6 +183,7 @@ $categories = [
                 <?php foreach ($articles as $a): 
                     $cat_info = $categories[$a['category']] ?? $categories['other'];
                     $avatar_char = mb_substr($a['author'] ?? 'U', 0, 1, 'UTF-8');
+                    // 🛡️ 判斷此使用者是否有權編輯此文章
                     $can_edit = ($a['created_by'] == $current_user_id || $is_management);
                 ?>
                 <div class="col-md-6 col-xl-4">
@@ -354,7 +361,8 @@ $categories = [
             </div>
             <?php endif; ?>
 
-        <div class="modal fade" id="addArticleModal" tabindex="-1">
+<?php if ($is_management): ?>
+<div class="modal fade" id="addArticleModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
             <form method="POST">
@@ -407,6 +415,7 @@ $categories = [
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <script>
 // 一鍵複製全文功能

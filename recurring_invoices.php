@@ -3,6 +3,8 @@ require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_login();
+
+// 防護：PM, Finance, Viewer 可進入 (Developer 無需接觸財務)
 require_any_role(['pm', 'finance', 'viewer']);
 
 $success = $error = '';
@@ -16,106 +18,113 @@ $per_page = 15;
 $offset = ($page - 1) * $per_page;
 
 // ==============================================
-// 處理表單提交 (生成發票、新增、編輯、暫停/恢復、刪除)
+// 處理表單提交 (生成發票、新增、編輯、暫停/恢復、刪除) - 🛡️ 加入後端權限驗證
 // ==============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // 1. 生成當期發票
-    if (isset($_POST['generate_invoice'])) {
-        $recurring_id = (int)$_POST['recurring_id'];
-        $recurring = db_fetch_one("SELECT * FROM recurring_invoices WHERE id = ?", [$recurring_id]);
-        
-        if ($recurring && $recurring['status'] == 'active') {
-            $invoice_number = 'INV-' . date('Ymd') . '-' . str_pad(rand(1,999), 3, '0', STR_PAD_LEFT);
+    // 安全防護：只有 Admin 和 Finance 可以進行 CUD 操作
+    if (!has_any_role(['admin', 'finance'])) {
+        $error = '權限不足！您沒有新增、修改或刪除週期性發票的權限。';
+    } else {
+        // 1. 生成當期發票
+        if (isset($_POST['generate_invoice'])) {
+            $recurring_id = (int)$_POST['recurring_id'];
+            $recurring = db_fetch_one("SELECT * FROM recurring_invoices WHERE id = ?", [$recurring_id]);
             
-            // 對應 invoices 表的結構
-            $invoice_data = [
-                'invoice_number' => $invoice_number,
-                'client_id' => $recurring['client_id'],
-                'project_id' => $recurring['project_id'],
-                'issue_date' => date('Y-m-d'),
-                'due_date' => date('Y-m-d', strtotime('+30 days')),
-                'subtotal' => $recurring['amount'],
-                'tax_percent' => 0,
-                'total_amount' => $recurring['amount'],
-                'status' => 'draft',
-                'notes' => $recurring['notes'] ?? '',
+            if ($recurring && $recurring['status'] == 'active') {
+                $invoice_number = 'INV-' . date('Ymd') . '-' . str_pad(rand(1,999), 3, '0', STR_PAD_LEFT);
+                
+                // 對應 invoices 表的結構
+                $invoice_data = [
+                    'invoice_number' => $invoice_number,
+                    'client_id' => $recurring['client_id'],
+                    'project_id' => $recurring['project_id'],
+                    'issue_date' => date('Y-m-d'),
+                    'due_date' => date('Y-m-d', strtotime('+30 days')),
+                    'subtotal' => $recurring['amount'],
+                    'tax_percent' => 0,
+                    'total_amount' => $recurring['amount'],
+                    'status' => 'draft',
+                    'notes' => $recurring['notes'] ?? '',
+                    'created_by' => $_SESSION['user_id']
+                ];
+                
+                db_insert('invoices', $invoice_data);
+                
+                // 根據頻率計算下次發票日
+                $next_date = $recurring['next_invoice_date'];
+                switch ($recurring['frequency']) {
+                    case 'monthly':
+                        $next_date = date('Y-m-d', strtotime($next_date . ' +1 month'));
+                        break;
+                    case 'quarterly':
+                        $next_date = date('Y-m-d', strtotime($next_date . ' +3 months'));
+                        break;
+                    case 'yearly':
+                        $next_date = date('Y-m-d', strtotime($next_date . ' +1 year'));
+                        break;
+                }
+                
+                db_update('recurring_invoices', ['next_invoice_date' => $next_date], 'id = ?', [$recurring_id]);
+                $success = "已為「{$recurring['title']}」成功生成草稿發票 #{$invoice_number}！";
+            }
+        }
+        
+        // 2. 新增周期性發票
+        elseif (isset($_POST['create_recurring'])) {
+            $data = [
+                'client_id' => (int)$_POST['client_id'],
+                'project_id' => !empty($_POST['project_id']) ? (int)$_POST['project_id'] : null,
+                'title' => trim($_POST['title']),
+                'amount' => (float)$_POST['amount'],
+                'frequency' => $_POST['frequency'],
+                'start_date' => $_POST['start_date'],
+                'next_invoice_date' => $_POST['start_date'],
+                'status' => 'active',
+                'notes' => trim($_POST['notes'] ?? ''),
                 'created_by' => $_SESSION['user_id']
             ];
-            
-            db_insert('invoices', $invoice_data);
-            
-            // 根據頻率計算下次發票日
-            $next_date = $recurring['next_invoice_date'];
-            switch ($recurring['frequency']) {
-                case 'monthly':
-                    $next_date = date('Y-m-d', strtotime($next_date . ' +1 month'));
-                    break;
-                case 'quarterly':
-                    $next_date = date('Y-m-d', strtotime($next_date . ' +3 months'));
-                    break;
-                case 'yearly':
-                    $next_date = date('Y-m-d', strtotime($next_date . ' +1 year'));
-                    break;
-            }
-            
-            db_update('recurring_invoices', ['next_invoice_date' => $next_date], 'id = ?', [$recurring_id]);
-            $success = "已為「{$recurring['title']}」成功生成草稿發票 #{$invoice_number}！";
+            db_insert('recurring_invoices', $data);
+            $success = '周期性發票規則已成功設置！';
         }
-    }
-    
-    // 2. 新增周期性發票
-    elseif (isset($_POST['create_recurring'])) {
-        $data = [
-            'client_id' => (int)$_POST['client_id'],
-            'project_id' => !empty($_POST['project_id']) ? (int)$_POST['project_id'] : null,
-            'title' => trim($_POST['title']),
-            'amount' => (float)$_POST['amount'],
-            'frequency' => $_POST['frequency'],
-            'start_date' => $_POST['start_date'],
-            'next_invoice_date' => $_POST['start_date'],
-            'status' => 'active',
-            'notes' => trim($_POST['notes'] ?? ''),
-            'created_by' => $_SESSION['user_id']
-        ];
-        db_insert('recurring_invoices', $data);
-        $success = '周期性發票規則已成功設置！';
-    }
 
-    // 3. 編輯周期性發票
-    elseif (isset($_POST['edit_recurring'])) {
-        $recurring_id = (int)$_POST['recurring_id'];
-        $data = [
-            'client_id' => (int)$_POST['client_id'],
-            'project_id' => !empty($_POST['project_id']) ? (int)$_POST['project_id'] : null,
-            'title' => trim($_POST['title']),
-            'amount' => (float)$_POST['amount'],
-            'frequency' => $_POST['frequency'],
-            'next_invoice_date' => $_POST['next_invoice_date'],
-            'status' => $_POST['status'],
-            'notes' => trim($_POST['notes'] ?? '')
-        ];
-        db_update('recurring_invoices', $data, 'id = ?', [$recurring_id]);
-        $success = '周期性發票規則已成功更新！';
-    }
-    
-    // 4. 操作 (暫停 / 恢復 / 刪除)
-    elseif (isset($_POST['action'])) {
-        $id = (int)$_POST['recurring_id'];
-        if ($_POST['action'] === 'pause') {
-            db_update('recurring_invoices', ['status' => 'paused'], 'id = ?', [$id]);
-            $success = '已成功暫停此周期性發票。';
-        } elseif ($_POST['action'] === 'resume') {
-            db_update('recurring_invoices', ['status' => 'active'], 'id = ?', [$id]);
-            $success = '已恢復此周期性發票。';
-        } elseif ($_POST['action'] === 'delete') {
-            db_delete('recurring_invoices', 'id = ?', [$id]);
-            $success = '此周期性發票規則已徹底刪除。';
+        // 3. 編輯周期性發票
+        elseif (isset($_POST['edit_recurring'])) {
+            $recurring_id = (int)$_POST['recurring_id'];
+            $data = [
+                'client_id' => (int)$_POST['client_id'],
+                'project_id' => !empty($_POST['project_id']) ? (int)$_POST['project_id'] : null,
+                'title' => trim($_POST['title']),
+                'amount' => (float)$_POST['amount'],
+                'frequency' => $_POST['frequency'],
+                'next_invoice_date' => $_POST['next_invoice_date'],
+                'status' => $_POST['status'],
+                'notes' => trim($_POST['notes'] ?? '')
+            ];
+            db_update('recurring_invoices', $data, 'id = ?', [$recurring_id]);
+            $success = '周期性發票規則已成功更新！';
+        }
+        
+        // 4. 操作 (暫停 / 恢復 / 刪除)
+        elseif (isset($_POST['action'])) {
+            $id = (int)$_POST['recurring_id'];
+            if ($_POST['action'] === 'pause') {
+                db_update('recurring_invoices', ['status' => 'paused'], 'id = ?', [$id]);
+                $success = '已成功暫停此周期性發票。';
+            } elseif ($_POST['action'] === 'resume') {
+                db_update('recurring_invoices', ['status' => 'active'], 'id = ?', [$id]);
+                $success = '已恢復此周期性發票。';
+            } elseif ($_POST['action'] === 'delete') {
+                db_delete('recurring_invoices', 'id = ?', [$id]);
+                $success = '此周期性發票規則已徹底刪除。';
+            }
         }
     }
 }
 
+// ==============================================
 // 建立分頁與搜尋的 SQL 查詢
+// ==============================================
 $where_clauses = ["1=1"];
 $params = [];
 
@@ -186,6 +195,7 @@ $status_options = [
                     <p class="text-muted mb-0 d-none d-md-block">設定維護合約 (SLA)、雲端租賃等自動定期計費與開單排程</p>
                 </div>
                 <div>
+                    <!-- 🛡️ 前端權限：隱藏新增按鈕 -->
                     <?php if(has_any_role(['admin', 'finance'])): ?>
                     <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#createRecurringModal">
                         <i class="bi bi-plus-circle me-1"></i> 新增周期計費
@@ -305,12 +315,14 @@ $status_options = [
                                                 <input type="hidden" name="recurring_id" value="<?= $r['id'] ?>">
                                                 <button type="submit" name="action" value="delete" class="btn btn-sm btn-light border text-danger" title="刪除"><i class="bi bi-trash3"></i></button>
                                             </form>
+                                        <!-- 🛡️ 前端權限：Viewer 只能看，顯示鎖頭 -->
                                         <?php else: ?>
-                                            <button class="btn btn-sm btn-light border text-muted disabled"><i class="bi bi-lock"></i></button>
+                                            <button class="btn btn-sm btn-light border text-muted disabled" title="權限不足"><i class="bi bi-lock"></i></button>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
                                 
+                                <!-- 🛡️ 編輯 Modal 只對有權限的人渲染 -->
                                 <?php if(has_any_role(['admin', 'finance'])): ?>
                                 <div class="modal fade" id="editRecurringModal<?= $r['id'] ?>" tabindex="-1">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -457,6 +469,7 @@ $status_options = [
     </div>
 </div>
 
+<!-- 🛡️ 新增 Modal 只對有權限的人渲染 -->
 <?php if(has_any_role(['admin', 'finance'])): ?>
 <div class="modal fade" id="createRecurringModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">

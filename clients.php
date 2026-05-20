@@ -3,7 +3,7 @@ require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_login();
-require_any_role(['pm', 'finance', 'viewer']);
+require_any_role(['pm', 'finance', 'viewer']); // Finance 和 Viewer 可進入查看
 
 $success = $error = '';
 $search = $_GET['search'] ?? '';
@@ -12,68 +12,75 @@ $page = max(1, (int)($_GET['page'] ?? 1));
 $per_page = 15;
 $offset = ($page - 1) * $per_page;
 
-// 處理 POST 請求 (新增、編輯、刪除)
+// ==============================================
+// 處理 POST 請求 (新增、編輯、刪除) - 🛡️ 加入後端權限驗證
+// ==============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // 新增或更新客戶
-    if (isset($_POST['add_client']) || isset($_POST['update_client'])) {
-        $username = trim($_POST['username'] ?? '');
-        $password = $_POST['password'] ?? '';
-        
-        $data = [
-            'company_name' => trim($_POST['company_name']),
-            'contact_person' => trim($_POST['contact_person'] ?? ''),
-            'email' => trim($_POST['email'] ?? ''),
-            'phone' => trim($_POST['phone'] ?? ''),
-            'address' => trim($_POST['address'] ?? ''),
-            'notes' => trim($_POST['notes'] ?? ''),
-            'status' => $_POST['status'] ?? 'active'
-        ];
-
-        // 處理使用者帳號
-        if (!empty($username)) {
-            $data['username'] = $username;
-        }
-
-        if (isset($_POST['add_client'])) {
-            // 新增模式：檢查帳號重複
-            $existing = null;
-            if (!empty($username)) {
-                $existing = db_fetch_one("SELECT id FROM clients WHERE username = ?", [$username]);
-            }
+    // 安全防護：只有 Admin 和 PM 可以進行 CUD 操作
+    if (!has_any_role(['admin', 'pm'])) {
+        $error = '權限不足！您沒有新增、修改或刪除客戶資料的權限。';
+    } else {
+        // 新增或更新客戶
+        if (isset($_POST['add_client']) || isset($_POST['update_client'])) {
+            $username = trim($_POST['username'] ?? '');
+            $password = $_POST['password'] ?? '';
             
-            if ($existing) {
-                $error = '新增失敗：客戶登入帳號已存在，請更換！';
-            } else {
-                if (!empty($password)) {
-                    $data['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
-                }
-                db_insert('clients', $data);
-                $success = '客戶新增成功！';
-            }
-        } else {
-            // 更新模式
-            $id = (int)$_POST['client_id'];
-            $existing = null;
+            $data = [
+                'company_name' => trim($_POST['company_name']),
+                'contact_person' => trim($_POST['contact_person'] ?? ''),
+                'email' => trim($_POST['email'] ?? ''),
+                'phone' => trim($_POST['phone'] ?? ''),
+                'address' => trim($_POST['address'] ?? ''),
+                'notes' => trim($_POST['notes'] ?? ''),
+                'status' => $_POST['status'] ?? 'active'
+            ];
+
+            // 處理使用者帳號
             if (!empty($username)) {
-                $existing = db_fetch_one("SELECT id FROM clients WHERE username = ? AND id != ?", [$username, $id]);
+                $data['username'] = $username;
             }
 
-            if ($existing) {
-                $error = '更新失敗：客戶登入帳號已與其他公司重複！';
-            } else {
-                if (!empty($password)) {
-                    $data['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+            if (isset($_POST['add_client'])) {
+                // 新增模式：檢查帳號重複
+                $existing = null;
+                if (!empty($username)) {
+                    $existing = db_fetch_one("SELECT id FROM clients WHERE username = ?", [$username]);
                 }
-                db_update('clients', $data, 'id = ?', [$id]);
-                $success = '客戶資料已更新！';
+                
+                if ($existing) {
+                    $error = '新增失敗：客戶登入帳號已存在，請更換！';
+                } else {
+                    if (!empty($password)) {
+                        $data['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+                    }
+                    db_insert('clients', $data);
+                    $success = '客戶新增成功！';
+                }
+            } else {
+                // 更新模式
+                $id = (int)$_POST['client_id'];
+                $existing = null;
+                if (!empty($username)) {
+                    $existing = db_fetch_one("SELECT id FROM clients WHERE username = ? AND id != ?", [$username, $id]);
+                }
+
+                if ($existing) {
+                    $error = '更新失敗：客戶登入帳號已與其他公司重複！';
+                } else {
+                    if (!empty($password)) {
+                        $data['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+                    }
+                    db_update('clients', $data, 'id = ?', [$id]);
+                    $success = '客戶資料已更新！';
+                }
             }
         }
-    }
-    
-    if (isset($_POST['delete_client'])) {
-        db_delete('clients', 'id = ?', [$_POST['client_id']]);
-        $success = '客戶已徹底刪除！';
+        
+        if (isset($_POST['delete_client'])) {
+            db_delete('clients', 'id = ?', [$_POST['client_id']]);
+            $success = '客戶已徹底刪除！';
+        }
     }
 }
 
@@ -145,9 +152,12 @@ $status_labels = [
                         <p class="text-muted mb-0 d-none d-md-block">管理公司客戶檔案、聯絡資訊與 Client Portal 登入權限</p>
                     </div>
                 </div>
+                
+                <?php if (has_any_role(['admin', 'pm'])): ?>
                 <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addClientModal">
                     <i class="bi bi-plus-circle me-1"></i> 新增客戶
                 </button>
+                <?php endif; ?>
             </div>
             
             <div class="card mb-4 border-0 shadow-sm">
@@ -231,15 +241,20 @@ $status_labels = [
                                     </td>
                                     <td class="text-muted small"><?= date('Y-m-d', strtotime($c['created_at'])) ?></td>
                                     <td class="text-end pe-4">
-                                        <button class="btn btn-sm btn-light border text-primary me-1" data-bs-toggle="modal" data-bs-target="#editClientModal<?= $c['id'] ?>" title="編輯"><i class="bi bi-pencil-square"></i></button>
-                                        
-                                        <form method="POST" class="d-inline" onsubmit="return confirm('⚠️ 嚴重警告！\n\n刪除客戶將會連帶永久刪除該客戶名下的：\n- 所有項目 (Projects)\n- 所有任務 (Tasks)\n- 所有發票 (Invoices)\n\n建議在編輯中將狀態改為「非活躍」。\n\n確定要強制刪除嗎？')">
-                                            <input type="hidden" name="client_id" value="<?= $c['id'] ?>">
-                                            <button type="submit" name="delete_client" class="btn btn-sm btn-light border text-danger" title="刪除"><i class="bi bi-trash3"></i></button>
-                                        </form>
+                                        <?php if (has_any_role(['admin', 'pm'])): ?>
+                                            <button class="btn btn-sm btn-light border text-primary me-1" data-bs-toggle="modal" data-bs-target="#editClientModal<?= $c['id'] ?>" title="編輯"><i class="bi bi-pencil-square"></i></button>
+                                            
+                                            <form method="POST" class="d-inline" onsubmit="return confirm('⚠️ 嚴重警告！\n\n刪除客戶將會連帶永久刪除該客戶名下的：\n- 所有項目 (Projects)\n- 所有任務 (Tasks)\n- 所有發票 (Invoices)\n\n建議在編輯中將狀態改為「非活躍」。\n\n確定要強制刪除嗎？')">
+                                                <input type="hidden" name="client_id" value="<?= $c['id'] ?>">
+                                                <button type="submit" name="delete_client" class="btn btn-sm btn-light border text-danger" title="刪除"><i class="bi bi-trash3"></i></button>
+                                            </form>
+                                        <?php else: ?>
+                                            <button class="btn btn-sm btn-light border text-muted disabled" title="權限不足"><i class="bi bi-lock"></i></button>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                                 
+                                <?php if (has_any_role(['admin', 'pm'])): ?>
                                 <div class="modal fade" id="editClientModal<?= $c['id'] ?>" tabindex="-1">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content border-0 shadow-lg">
@@ -345,6 +360,8 @@ $status_labels = [
                                         </div>
                                     </div>
                                 </div>
+                                <?php endif; ?>
+
                                 <?php endforeach; ?>
                                 
                                 <?php if (empty($clients)): ?>
@@ -381,7 +398,8 @@ $status_labels = [
             </div>
             <?php endif; ?>
             
-        <div class="modal fade" id="addClientModal" tabindex="-1">
+<?php if (has_any_role(['admin', 'pm'])): ?>
+<div class="modal fade" id="addClientModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
             <form method="POST">
@@ -484,5 +502,6 @@ $status_labels = [
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>

@@ -3,6 +3,8 @@ require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_login();
+
+// 防護：PM, Developer, Viewer 可進入 (Finance 無權)
 require_any_role(['pm', 'developer', 'viewer']);
 
 $success = $error = '';
@@ -16,58 +18,72 @@ $per_page = 15;
 $offset = ($page - 1) * $per_page;
 
 // ==============================================
-// 處理表單提交 (新增、編輯、刪除)
+// 處理表單提交 (新增、編輯、刪除) - 🛡️ 嚴格後端權限驗證
 // ==============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // 1. 新增任務
+    // 1. 新增任務 (僅限 Admin, PM)
     if (isset($_POST['add_task'])) {
-        $data = [
-            'project_id' => (int)$_POST['project_id'],
-            'title' => trim($_POST['title']),
-            'description' => trim($_POST['description'] ?? ''),
-            'assigned_to_id' => !empty($_POST['assigned_to_id']) ? (int)$_POST['assigned_to_id'] : null,
-            'priority' => $_POST['priority'] ?? 'medium',
-            'status' => 'todo',
-            'due_date' => !empty($_POST['due_date']) ? $_POST['due_date'] : null,
-            'estimated_hours' => (float)($_POST['estimated_hours'] ?? 0)
-        ];
-        if (!empty($data['title']) && !empty($data['project_id'])) {
-            db_insert('tasks', $data);
-            $success = '新任務已成功建立並指派！';
+        if (!has_any_role(['admin', 'pm'])) {
+            $error = '權限不足！您沒有新增任務的權限。';
         } else {
-            $error = '請填寫必填欄位 (任務標題及所屬項目)！';
+            $data = [
+                'project_id' => (int)$_POST['project_id'],
+                'title' => trim($_POST['title']),
+                'description' => trim($_POST['description'] ?? ''),
+                'assigned_to_id' => !empty($_POST['assigned_to_id']) ? (int)$_POST['assigned_to_id'] : null,
+                'priority' => $_POST['priority'] ?? 'medium',
+                'status' => 'todo',
+                'due_date' => !empty($_POST['due_date']) ? $_POST['due_date'] : null,
+                'estimated_hours' => (float)($_POST['estimated_hours'] ?? 0)
+            ];
+            if (!empty($data['title']) && !empty($data['project_id'])) {
+                db_insert('tasks', $data);
+                $success = '新任務已成功建立並指派！';
+            } else {
+                $error = '請填寫必填欄位 (任務標題及所屬項目)！';
+            }
         }
     }
     
-    // 2. 編輯任務
+    // 2. 編輯任務 (Admin/PM 全權限；Developer 只能改自己任務的狀態)
     elseif (isset($_POST['edit_task'])) {
         $task_id = (int)$_POST['task_id'];
-        $data = [
-            'project_id' => (int)$_POST['project_id'],
-            'title' => trim($_POST['title']),
-            'description' => trim($_POST['description'] ?? ''),
-            'assigned_to_id' => !empty($_POST['assigned_to_id']) ? (int)$_POST['assigned_to_id'] : null,
-            'priority' => $_POST['priority'] ?? 'medium',
-            'status' => $_POST['status'] ?? 'todo',
-            'due_date' => !empty($_POST['due_date']) ? $_POST['due_date'] : null,
-            'estimated_hours' => (float)($_POST['estimated_hours'] ?? 0)
-        ];
+        $existing_task = db_fetch_one("SELECT assigned_to_id FROM tasks WHERE id = ?", [$task_id]);
         
-        // Developer 只能改 Status，其他由 admin/pm 處理
-        if (has_any_role(['developer']) && !has_any_role(['admin', 'pm'])) {
+        if (has_any_role(['admin', 'pm'])) {
+            // 管理層可全面編輯
+            $data = [
+                'project_id' => (int)$_POST['project_id'],
+                'title' => trim($_POST['title']),
+                'description' => trim($_POST['description'] ?? ''),
+                'assigned_to_id' => !empty($_POST['assigned_to_id']) ? (int)$_POST['assigned_to_id'] : null,
+                'priority' => $_POST['priority'] ?? 'medium',
+                'status' => $_POST['status'] ?? 'todo',
+                'due_date' => !empty($_POST['due_date']) ? $_POST['due_date'] : null,
+                'estimated_hours' => (float)($_POST['estimated_hours'] ?? 0)
+            ];
+            db_update('tasks', $data, 'id = ?', [$task_id]);
+            $success = '任務內容已成功更新！';
+        } elseif (has_role('developer') && $existing_task['assigned_to_id'] == $_SESSION['user_id']) {
+            // Developer 只能更新進度狀態
             $data = ['status' => $_POST['status'] ?? 'todo'];
+            db_update('tasks', $data, 'id = ?', [$task_id]);
+            $success = '任務進度狀態已成功更新！';
+        } else {
+            $error = '權限不足！您只能更新指派給您的任務。';
         }
-
-        db_update('tasks', $data, 'id = ?', [$task_id]);
-        $success = '任務內容已成功更新！';
     }
     
-    // 3. 刪除任務
+    // 3. 刪除任務 (僅限 Admin, PM)
     elseif (isset($_POST['delete_task'])) {
-        $task_id = (int)$_POST['delete_task_id'];
-        db_delete('tasks', 'id = ?', [$task_id]);
-        $success = '任務已成功刪除！';
+        if (!has_any_role(['admin', 'pm'])) {
+            $error = '權限不足！您沒有刪除任務的權限。';
+        } else {
+            $task_id = (int)$_POST['delete_task_id'];
+            db_delete('tasks', 'id = ?', [$task_id]);
+            $success = '任務已成功刪除！';
+        }
     }
 }
 
@@ -113,7 +129,7 @@ $tasks = db_fetch_all($sql, $params);
 
 // 獲取選單用資料
 $projects = db_fetch_all("SELECT id, title FROM projects WHERE status != 'cancelled' ORDER BY updated_at DESC");
-$team = db_fetch_all("SELECT id, full_name FROM users WHERE is_active=1");
+$team = db_fetch_all("SELECT id, full_name FROM users WHERE is_active=1 AND role IN ('admin', 'pm', 'developer')");
 
 // 狀態設定
 $status_badges = [
@@ -267,6 +283,10 @@ include 'includes/header.php';
                                                 <button type="submit" name="delete_task" class="btn btn-sm btn-light border text-danger" title="刪除"><i class="bi bi-trash"></i></button>
                                             </form>
                                             <?php endif; ?>
+
+                                            <?php if(!has_any_role(['admin', 'pm']) && !(has_role('developer') && $t['assigned_to_id'] == $_SESSION['user_id'])): ?>
+                                                <button class="btn btn-sm btn-light border text-muted disabled"><i class="bi bi-lock"></i></button>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
@@ -290,7 +310,6 @@ include 'includes/header.php';
                                                     <input type="hidden" name="task_id" value="<?= $t['id'] ?>">
                                                     <div class="row g-3">
                                                         <?php if(has_any_role(['admin', 'pm'])): ?>
-                                                        <!-- PM / Admin 完整編輯表單 -->
                                                         <div class="col-12">
                                                             <label class="form-label text-slate-500 fw-semibold small mb-1">任務標題 *</label>
                                                             <input type="text" name="title" class="form-control shadow-none fw-bold" value="<?= htmlspecialchars($t['title']) ?>" required>
@@ -341,13 +360,12 @@ include 'includes/header.php';
                                                             <textarea name="description" class="form-control shadow-none bg-light" rows="3"><?= htmlspecialchars($t['description']) ?></textarea>
                                                         </div>
                                                         <?php else: ?>
-                                                        <!-- Developer 只能更新狀態的精簡表單 -->
                                                         <div class="col-12">
                                                             <h5 class="fw-bold text-slate-800 mb-1"><?= htmlspecialchars($t['title']) ?></h5>
-                                                            <p class="text-muted small mb-4"><?= htmlspecialchars($t['description']) ?></p>
+                                                            <p class="text-muted small mb-4"><?= htmlspecialchars($t['description'] ?: '無詳細描述') ?></p>
                                                         </div>
                                                         <div class="col-12">
-                                                            <label class="form-label text-slate-500 fw-semibold small mb-1">更新當前狀態</label>
+                                                            <label class="form-label text-slate-500 fw-semibold small mb-1">更新當前進度狀態</label>
                                                             <select name="status" class="form-select shadow-none border-primary">
                                                                 <?php foreach ($status_badges as $val => $opt): ?>
                                                                     <option value="<?= $val ?>" <?= $t['status'] === $val ? 'selected' : '' ?>><?= $opt['label'] ?></option>
@@ -404,73 +422,73 @@ include 'includes/header.php';
 
         <?php if(has_any_role(['admin', 'pm'])): ?>
         <div class="modal fade" id="addTaskModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <form method="POST">
-                <div class="modal-header border-0 pb-0 pt-4 px-4">
-                    <h5 class="modal-title fw-bold text-slate-800 d-flex align-items-center">
-                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-2 me-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
-                            <i class="bi bi-patch-plus fs-5"></i>
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <form method="POST">
+                        <div class="modal-header border-0 pb-0 pt-4 px-4">
+                            <h5 class="modal-title fw-bold text-slate-800 d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-2 me-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                    <i class="bi bi-patch-plus fs-5"></i>
+                                </div>
+                                指派新任務
+                            </h5>
+                            <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
                         </div>
-                        指派新任務
-                    </h5>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                        <div class="modal-body p-4">
+                            <input type="hidden" name="add_task" value="1">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">所屬項目 *</label>
+                                    <select name="project_id" class="form-select shadow-none" required>
+                                        <option value="">請選擇專案...</option>
+                                        <?php foreach ($projects as $pr): ?>
+                                            <option value="<?= $pr['id'] ?>"><?= htmlspecialchars($pr['title']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">任務標題名稱 *</label>
+                                    <input type="text" name="title" class="form-control shadow-none fw-bold" placeholder="例如：優化結帳流程 API" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">執行擔當人</label>
+                                    <select name="assigned_to_id" class="form-select shadow-none">
+                                        <option value="">-- 開放認領 --</option>
+                                        <?php foreach ($team as $tm): ?>
+                                            <option value="<?= $tm['id'] ?>"><?= htmlspecialchars($tm['full_name']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">優先程度</label>
+                                    <select name="priority" class="form-select shadow-none">
+                                        <?php foreach ($priority_badges as $val => $opt): ?>
+                                            <option value="<?= $val ?>" <?= $val === 'medium' ? 'selected' : '' ?>><?= $opt['label'] ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">截止死線日期</label>
+                                    <input type="date" name="due_date" class="form-control shadow-none">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">預估工時 (Hours)</label>
+                                    <input type="number" step="0.5" name="estimated_hours" class="form-control shadow-none" value="0">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">任務具體內容描述</label>
+                                    <textarea name="description" class="form-control shadow-none bg-light" rows="3" placeholder="任務的要求細節..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 pt-0 pb-4 px-4">
+                            <button type="button" class="btn btn-light border fw-medium" data-bs-dismiss="modal">取消</button>
+                            <button type="submit" class="btn btn-primary px-4 shadow-sm">儲存並分派</button>
+                        </div>
+                    </form>
                 </div>
-                <div class="modal-body p-4">
-                    <input type="hidden" name="add_task" value="1">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">所屬項目 *</label>
-                            <select name="project_id" class="form-select shadow-none" required>
-                                <option value="">請選擇專案...</option>
-                                <?php foreach ($projects as $pr): ?>
-                                    <option value="<?= $pr['id'] ?>"><?= htmlspecialchars($pr['title']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">任務標題名稱 *</label>
-                            <input type="text" name="title" class="form-control shadow-none fw-bold" placeholder="例如：優化結帳流程 API" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">執行擔當人</label>
-                            <select name="assigned_to_id" class="form-select shadow-none">
-                                <option value="">-- 開放認領 --</option>
-                                <?php foreach ($team as $tm): ?>
-                                    <option value="<?= $tm['id'] ?>"><?= htmlspecialchars($tm['full_name']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">優先程度</label>
-                            <select name="priority" class="form-select shadow-none">
-                                <?php foreach ($priority_badges as $val => $opt): ?>
-                                    <option value="<?= $val ?>" <?= $val === 'medium' ? 'selected' : '' ?>><?= $opt['label'] ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">截止死線日期</label>
-                            <input type="date" name="due_date" class="form-control shadow-none">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">預估工時 (Hours)</label>
-                            <input type="number" step="0.5" name="estimated_hours" class="form-control shadow-none" value="0">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">任務具體內容描述</label>
-                            <textarea name="description" class="form-control shadow-none bg-light" rows="3" placeholder="任務的要求細節..."></textarea>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 pt-0 pb-4 px-4">
-                    <button type="button" class="btn btn-light border fw-medium" data-bs-dismiss="modal">取消</button>
-                    <button type="submit" class="btn btn-primary px-4 shadow-sm">儲存並分派</button>
-                </div>
-            </form>
+            </div>
         </div>
-    </div>
-</div>
-<?php endif; ?>
+        <?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>

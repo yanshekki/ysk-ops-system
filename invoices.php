@@ -3,6 +3,8 @@ require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_login();
+
+// 防護：PM, Finance, Viewer 可進入 (Developer 無需接觸財務)
 require_any_role(['pm', 'finance', 'viewer']);
 
 $success = $error = '';
@@ -15,67 +17,72 @@ $per_page = 15;
 $offset = ($page - 1) * $per_page;
 
 // ==============================================
-// 處理表單提交 (新增、編輯、刪除)
+// 處理表單提交 (新增、編輯、刪除) - 🛡️ 加入後端權限驗證
 // ==============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // 1. 開立新發票
-    if (isset($_POST['create_invoice'])) {
-        $subtotal = (float)$_POST['subtotal'];
-        $tax_percent = (float)($_POST['tax_percent'] ?? 0);
-        $total_amount = $subtotal + ($subtotal * ($tax_percent / 100));
-        
-        // 自動生成發票單號 (INV-YYYYMMDD-XXX)
-        $invoice_number = 'INV-' . date('Ymd') . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
-        
-        $data = [
-            'invoice_number' => $invoice_number,
-            'client_id' => (int)$_POST['client_id'],
-            'project_id' => !empty($_POST['project_id']) ? (int)$_POST['project_id'] : null,
-            'issue_date' => $_POST['issue_date'],
-            'due_date' => $_POST['due_date'],
-            'subtotal' => $subtotal,
-            'tax_percent' => $tax_percent,
-            'total_amount' => $total_amount,
-            'status' => 'draft',
-            'notes' => trim($_POST['notes'] ?? ''),
-            'created_by' => $_SESSION['user_id']
-        ];
-        
-        if (!empty($data['client_id']) && $subtotal > 0) {
-            db_insert('invoices', $data);
-            $success = "發票 #{$invoice_number} 已成功建立！";
-        } else {
-            $error = '請選擇客戶並輸入有效的金額！';
+    // 安全防護：只有 Admin 和 Finance 可以進行 CUD 操作
+    if (!has_any_role(['admin', 'finance'])) {
+        $error = '權限不足！您沒有新增、修改或刪除發票的權限。';
+    } else {
+        // 1. 開立新發票
+        if (isset($_POST['create_invoice'])) {
+            $subtotal = (float)$_POST['subtotal'];
+            $tax_percent = (float)($_POST['tax_percent'] ?? 0);
+            $total_amount = $subtotal + ($subtotal * ($tax_percent / 100));
+            
+            // 自動生成發票單號 (INV-YYYYMMDD-XXX)
+            $invoice_number = 'INV-' . date('Ymd') . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+            
+            $data = [
+                'invoice_number' => $invoice_number,
+                'client_id' => (int)$_POST['client_id'],
+                'project_id' => !empty($_POST['project_id']) ? (int)$_POST['project_id'] : null,
+                'issue_date' => $_POST['issue_date'],
+                'due_date' => $_POST['due_date'],
+                'subtotal' => $subtotal,
+                'tax_percent' => $tax_percent,
+                'total_amount' => $total_amount,
+                'status' => 'draft',
+                'notes' => trim($_POST['notes'] ?? ''),
+                'created_by' => $_SESSION['user_id']
+            ];
+            
+            if (!empty($data['client_id']) && $subtotal > 0) {
+                db_insert('invoices', $data);
+                $success = "發票 #{$invoice_number} 已成功建立！";
+            } else {
+                $error = '請選擇客戶並輸入有效的金額！';
+            }
         }
-    }
-    
-    // 2. 編輯發票 (更新狀態、金額等)
-    elseif (isset($_POST['edit_invoice'])) {
-        $invoice_id = (int)$_POST['invoice_id'];
-        $subtotal = (float)$_POST['subtotal'];
-        $tax_percent = (float)($_POST['tax_percent'] ?? 0);
-        $total_amount = $subtotal + ($subtotal * ($tax_percent / 100));
-
-        $data = [
-            'issue_date' => $_POST['issue_date'],
-            'due_date' => $_POST['due_date'],
-            'subtotal' => $subtotal,
-            'tax_percent' => $tax_percent,
-            'total_amount' => $total_amount,
-            'status' => $_POST['status'],
-            'notes' => trim($_POST['notes'] ?? '')
-        ];
         
-        db_update('invoices', $data, 'id = ?', [$invoice_id]);
-        $success = '發票內容及狀態已成功更新！';
-    }
-    
-    // 3. 刪除發票
-    elseif (isset($_POST['delete_invoice'])) {
-        $invoice_id = (int)$_POST['delete_invoice_id'];
-        db_delete('invoices', 'id = ?', [$invoice_id]);
-        $success = '發票記錄已成功刪除！';
+        // 2. 編輯發票 (更新狀態、金額等)
+        elseif (isset($_POST['edit_invoice'])) {
+            $invoice_id = (int)$_POST['invoice_id'];
+            $subtotal = (float)$_POST['subtotal'];
+            $tax_percent = (float)($_POST['tax_percent'] ?? 0);
+            $total_amount = $subtotal + ($subtotal * ($tax_percent / 100));
+
+            $data = [
+                'issue_date' => $_POST['issue_date'],
+                'due_date' => $_POST['due_date'],
+                'subtotal' => $subtotal,
+                'tax_percent' => $tax_percent,
+                'total_amount' => $total_amount,
+                'status' => $_POST['status'],
+                'notes' => trim($_POST['notes'] ?? '')
+            ];
+            
+            db_update('invoices', $data, 'id = ?', [$invoice_id]);
+            $success = '發票內容及狀態已成功更新！';
+        }
+        
+        // 3. 刪除發票
+        elseif (isset($_POST['delete_invoice'])) {
+            $invoice_id = (int)$_POST['delete_invoice_id'];
+            db_delete('invoices', 'id = ?', [$invoice_id]);
+            $success = '發票記錄已成功刪除！';
+        }
     }
 }
 
@@ -150,6 +157,7 @@ include 'includes/header.php';
                     </div>
                 </div>
                 <div>
+                    <!-- 🛡️ 前端權限：隱藏新增按鈕 -->
                     <?php if(has_any_role(['admin', 'finance'])): ?>
                     <button class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#createInvoiceModal">
                         <i class="bi bi-plus-circle me-1"></i> 開立新發票
@@ -240,6 +248,7 @@ include 'includes/header.php';
                                             <a href="invoice_pdf.php?id=<?= $i['id'] ?>" target="_blank" class="btn btn-sm btn-indigo text-white shadow-sm" style="background-color:#4f46e5;" title="下載/列印 PDF">
                                                 <i class="bi bi-printer"></i>
                                             </a>
+                                            <!-- 🛡️ 前端權限：隱藏項目的編輯/刪除操作 -->
                                             <?php if(has_any_role(['admin', 'finance'])): ?>
                                             <button class="btn btn-sm btn-light border text-primary" data-bs-toggle="modal" data-bs-target="#editInvoiceModal<?= $i['id'] ?>" title="編輯與更改狀態">
                                                 <i class="bi bi-pencil-square"></i>
@@ -250,10 +259,16 @@ include 'includes/header.php';
                                                 <button type="submit" name="delete_invoice" class="btn btn-sm btn-light border text-danger" title="刪除"><i class="bi bi-trash"></i></button>
                                             </form>
                                             <?php endif; ?>
+                                            
+                                            <!-- Viewer 等無權限者顯示鎖頭 -->
+                                            <?php if(!has_any_role(['admin', 'finance'])): ?>
+                                                <button class="btn btn-sm btn-light border text-muted disabled" title="權限不足"><i class="bi bi-lock"></i></button>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
 
+                                <!-- 🛡️ 編輯 Modal 只對有權限的人渲染 -->
                                 <?php if(has_any_role(['admin', 'finance'])): ?>
                                 <div class="modal fade" id="editInvoiceModal<?= $i['id'] ?>" tabindex="-1">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -355,6 +370,7 @@ include 'includes/header.php';
             </div>
             <?php endif; ?>
 
+        <!-- 🛡️ 新增 Modal 只對有權限的人渲染 -->
         <?php if(has_any_role(['admin', 'finance'])): ?>
         <div class="modal fade" id="createInvoiceModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">

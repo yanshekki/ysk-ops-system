@@ -3,6 +3,8 @@ require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_login();
+
+// 防護：全體員工皆可進入查看 (Admin 預設放行)
 require_any_role(['pm', 'developer', 'finance', 'viewer']);
 
 $success = $error = '';
@@ -15,64 +17,69 @@ $per_page = 9; // 3x3 網格
 $offset = ($page - 1) * $per_page;
 
 // ==============================================
-// 處理表單提交 (新增、編輯、刪除)
+// 處理表單提交 (新增、編輯、刪除) - 🛡️ 加入後端權限驗證
 // ==============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // 1. 新增專案
-    if (isset($_POST['create_project'])) {
-        $data = [
-            'client_id' => (int)$_POST['client_id'],
-            'title' => trim($_POST['title']),
-            'description' => trim($_POST['description'] ?? ''),
-            'service_type' => $_POST['service_type'],
-            'status' => 'planning',
-            'progress_percent' => 0,
-            'budget' => (float)($_POST['budget'] ?? 0),
-            'start_date' => !empty($_POST['start_date']) ? $_POST['start_date'] : null,
-            'end_date' => !empty($_POST['end_date']) ? $_POST['end_date'] : null,
-            'assigned_pm_id' => !empty($_POST['assigned_pm_id']) ? (int)$_POST['assigned_pm_id'] : null,
-            'created_by' => $_SESSION['user_id']
-        ];
-        if (!empty($data['title']) && !empty($data['client_id'])) {
-            db_insert('projects', $data);
-            $success = '新專案項目已順利建立！';
-        } else {
-            $error = '請填寫必填欄位 (客戶及項目名稱)！';
+    // 安全防護：只有 Admin 和 PM 可以進行 CUD 操作
+    if (!has_any_role(['admin', 'pm'])) {
+        $error = '權限不足！您沒有新增、修改或刪除專案項目的權限。';
+    } else {
+        // 1. 新增專案
+        if (isset($_POST['create_project'])) {
+            $data = [
+                'client_id' => (int)$_POST['client_id'],
+                'title' => trim($_POST['title']),
+                'description' => trim($_POST['description'] ?? ''),
+                'service_type' => $_POST['service_type'],
+                'status' => 'planning',
+                'progress_percent' => 0,
+                'budget' => (float)($_POST['budget'] ?? 0),
+                'start_date' => !empty($_POST['start_date']) ? $_POST['start_date'] : null,
+                'end_date' => !empty($_POST['end_date']) ? $_POST['end_date'] : null,
+                'assigned_pm_id' => !empty($_POST['assigned_pm_id']) ? (int)$_POST['assigned_pm_id'] : null,
+                'created_by' => $_SESSION['user_id']
+            ];
+            if (!empty($data['title']) && !empty($data['client_id'])) {
+                db_insert('projects', $data);
+                $success = '新專案項目已順利建立！';
+            } else {
+                $error = '請填寫必填欄位 (客戶及項目名稱)！';
+            }
         }
-    }
-    
-    // 2. 編輯專案
-    elseif (isset($_POST['edit_project'])) {
-        $project_id = (int)$_POST['project_id'];
-        $data = [
-            'client_id' => (int)$_POST['client_id'],
-            'title' => trim($_POST['title']),
-            'description' => trim($_POST['description'] ?? ''),
-            'service_type' => $_POST['service_type'],
-            'status' => $_POST['status'],
-            'progress_percent' => (int)$_POST['progress_percent'],
-            'budget' => (float)($_POST['budget'] ?? 0),
-            'start_date' => !empty($_POST['start_date']) ? $_POST['start_date'] : null,
-            'end_date' => !empty($_POST['end_date']) ? $_POST['end_date'] : null,
-            'assigned_pm_id' => !empty($_POST['assigned_pm_id']) ? (int)$_POST['assigned_pm_id'] : null
-        ];
         
-        // 防呆：如果設定為 completed，進度自動 100%
-        if ($data['status'] === 'completed') $data['progress_percent'] = 100;
+        // 2. 編輯專案
+        elseif (isset($_POST['edit_project'])) {
+            $project_id = (int)$_POST['project_id'];
+            $data = [
+                'client_id' => (int)$_POST['client_id'],
+                'title' => trim($_POST['title']),
+                'description' => trim($_POST['description'] ?? ''),
+                'service_type' => $_POST['service_type'],
+                'status' => $_POST['status'],
+                'progress_percent' => (int)$_POST['progress_percent'],
+                'budget' => (float)($_POST['budget'] ?? 0),
+                'start_date' => !empty($_POST['start_date']) ? $_POST['start_date'] : null,
+                'end_date' => !empty($_POST['end_date']) ? $_POST['end_date'] : null,
+                'assigned_pm_id' => !empty($_POST['assigned_pm_id']) ? (int)$_POST['assigned_pm_id'] : null
+            ];
+            
+            // 防呆：如果設定為 completed，進度自動 100%
+            if ($data['status'] === 'completed') $data['progress_percent'] = 100;
+            
+            db_update('projects', $data, 'id = ?', [$project_id]);
+            $success = '專案項目資料已成功更新！';
+        }
         
-        db_update('projects', $data, 'id = ?', [$project_id]);
-        $success = '專案項目資料已成功更新！';
-    }
-    
-    // 3. 刪除專案
-    elseif (isset($_POST['delete_project'])) {
-        $project_id = (int)$_POST['delete_project_id'];
-        try {
-            db_delete('projects', 'id = ?', [$project_id]);
-            $success = '專案項目已成功刪除！';
-        } catch (Exception $e) {
-            $error = '無法刪除此項目，可能已有綁定的任務或發票記錄。';
+        // 3. 刪除專案
+        elseif (isset($_POST['delete_project'])) {
+            $project_id = (int)$_POST['delete_project_id'];
+            try {
+                db_delete('projects', 'id = ?', [$project_id]);
+                $success = '專案項目已成功刪除！';
+            } catch (Exception $e) {
+                $error = '無法刪除此項目，可能已有綁定的任務或發票記錄。';
+            }
         }
     }
 }
@@ -213,8 +220,7 @@ include 'includes/header.php';
                                         <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editProjectModal<?= $p['id'] ?>"><i class="bi bi-pencil-square me-2 text-primary"></i>編輯項目</a></li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <form method="POST" class="m-0 p-0" onsubmit="return confirm('確定要刪除「<?= htmlspecialchars($p['title']) ?>」嗎？
-此動作無法復原！');">
+                                            <form method="POST" class="m-0 p-0" onsubmit="return confirm('確定要刪除「<?= htmlspecialchars($p['title']) ?>」嗎？\n此動作無法復原！');">
                                                 <input type="hidden" name="delete_project_id" value="<?= $p['id'] ?>">
                                                 <button type="submit" name="delete_project" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>刪除項目</button>
                                             </form>
@@ -398,81 +404,81 @@ include 'includes/header.php';
 
         <?php if(has_any_role(['admin', 'pm'])): ?>
         <div class="modal fade" id="createProjectModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <form method="POST">
-                <div class="modal-header border-0 pb-0 pt-4 px-4">
-                    <h5 class="modal-title fw-bold text-slate-800 d-flex align-items-center">
-                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-2 me-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
-                            <i class="bi bi-folder-plus fs-5"></i>
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <form method="POST">
+                        <div class="modal-header border-0 pb-0 pt-4 px-4">
+                            <h5 class="modal-title fw-bold text-slate-800 d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-2 me-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                    <i class="bi bi-folder-plus fs-5"></i>
+                                </div>
+                                建立新項目
+                            </h5>
+                            <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
                         </div>
-                        建立新項目
-                    </h5>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <input type="hidden" name="create_project" value="1">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">項目名稱 *</label>
-                            <input type="text" name="title" class="form-control shadow-none" placeholder="如：ERP 系統升級第二期" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">關聯客戶 *</label>
-                            <select name="client_id" class="form-select shadow-none" required>
-                                <option value="">請選擇客戶...</option>
-                                <?php foreach ($clients as $c): ?>
-                                    <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['company_name']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">指派項目經理 (PM)</label>
-                            <select name="assigned_pm_id" class="form-select shadow-none">
-                                <option value="">-- 稍後分配 --</option>
-                                <?php foreach ($pms as $m): ?>
-                                    <option value="<?= $m['id'] ?>"><?= htmlspecialchars($m['full_name']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">合約預算金額 (HK$)</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0 text-muted">$</span>
-                                <input type="number" step="0.01" name="budget" class="form-control shadow-none border-start-0 ps-0" value="0">
+                        <div class="modal-body p-4">
+                            <input type="hidden" name="create_project" value="1">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">項目名稱 *</label>
+                                    <input type="text" name="title" class="form-control shadow-none" placeholder="如：ERP 系統升級第二期" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">關聯客戶 *</label>
+                                    <select name="client_id" class="form-select shadow-none" required>
+                                        <option value="">請選擇客戶...</option>
+                                        <?php foreach ($clients as $c): ?>
+                                            <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['company_name']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">指派項目經理 (PM)</label>
+                                    <select name="assigned_pm_id" class="form-select shadow-none">
+                                        <option value="">-- 稍後分配 --</option>
+                                        <?php foreach ($pms as $m): ?>
+                                            <option value="<?= $m['id'] ?>"><?= htmlspecialchars($m['full_name']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">合約預算金額 (HK$)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0 text-muted">$</span>
+                                        <input type="number" step="0.01" name="budget" class="form-control shadow-none border-start-0 ps-0" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">服務類型</label>
+                                    <select name="service_type" class="form-select shadow-none">
+                                        <?php foreach ($service_options as $val => $label): ?>
+                                            <option value="<?= $val ?>"><?= $label ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">預計啟動日期</label>
+                                    <input type="date" name="start_date" class="form-control shadow-none">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">預計交付日期</label>
+                                    <input type="date" name="end_date" class="form-control shadow-none">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label text-slate-500 fw-semibold small mb-1">項目範圍細節說明</label>
+                                    <textarea name="description" class="form-control shadow-none" rows="3" placeholder="簡述此專案的目標與交付物..."></textarea>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">服務類型</label>
-                            <select name="service_type" class="form-select shadow-none">
-                                <?php foreach ($service_options as $val => $label): ?>
-                                    <option value="<?= $val ?>"><?= $label ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                        <div class="modal-footer border-0 pt-0 pb-4 px-4">
+                            <button type="button" class="btn btn-light border fw-medium" data-bs-dismiss="modal">取消</button>
+                            <button type="submit" class="btn btn-primary px-4 shadow-sm">確認建立項目</button>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">預計啟動日期</label>
-                            <input type="date" name="start_date" class="form-control shadow-none">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">預計交付日期</label>
-                            <input type="date" name="end_date" class="form-control shadow-none">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label text-slate-500 fw-semibold small mb-1">項目範圍細節說明</label>
-                            <textarea name="description" class="form-control shadow-none" rows="3" placeholder="簡述此專案的目標與交付物..."></textarea>
-                        </div>
-                    </div>
+                    </form>
                 </div>
-                <div class="modal-footer border-0 pt-0 pb-4 px-4">
-                    <button type="button" class="btn btn-light border fw-medium" data-bs-dismiss="modal">取消</button>
-                    <button type="submit" class="btn btn-primary px-4 shadow-sm">確認建立項目</button>
-                </div>
-            </form>
+            </div>
         </div>
-    </div>
-</div>
-<?php endif; ?>
+        <?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>

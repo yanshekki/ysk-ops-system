@@ -24,17 +24,17 @@ $current_user_role = current_user()['role'] ?? 'viewer';
 $can_approve = in_array($current_user_role, ['admin', 'pm']);
 
 // ==============================================
-// 處理表單提交 (新增、編輯、刪除、審核)
+// 處理表單提交 (新增、編輯、刪除、審核) - 🛡️ 嚴格後端權限驗證
 // ==============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // 1. 新增工時
+    // 1. 新增工時 (所有具備填報權限的角色皆可)
     if (isset($_POST['add_timesheet'])) {
         $data = [
             'user_id' => $current_user_id,
             'project_id' => (int)$_POST['project_id'],
             'task_id' => !empty($_POST['task_id']) ? (int)$_POST['task_id'] : null,
-            'work_date' => $_POST['work_date'], // 根據 database.sql 使用 work_date
+            'work_date' => $_POST['work_date'], 
             'hours' => (float)$_POST['hours'],
             'description' => trim($_POST['description'] ?? ''),
             'is_approved' => 0
@@ -78,6 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ts_id = (int)$_POST['delete_timesheet_id'];
         $ts = db_fetch_one("SELECT * FROM timesheets WHERE id = ?", [$ts_id]);
         
+        // 權限檢查：只能刪除自己的，或 admin/pm 可以刪除所有
         if ($ts && ($ts['user_id'] == $current_user_id || $can_approve)) {
             db_delete('timesheets', 'id = ?', [$ts_id]);
             $success = '工時記錄已徹底刪除！';
@@ -87,14 +88,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // 4. 審核 / 撤銷審核工時 (僅限 Admin / PM)
-    elseif (isset($_POST['toggle_approve']) && $can_approve) {
-        $ts_id = (int)$_POST['timesheet_id'];
-        $current_status = (int)$_POST['current_status'];
-        $new_status = $current_status ? 0 : 1;
-        $approved_by = $new_status ? $current_user_id : null;
-        
-        db_update('timesheets', ['is_approved' => $new_status, 'approved_by' => $approved_by], 'id = ?', [$ts_id]);
-        $success = $new_status ? '工時已審核通過！' : '工時已退回至待審核狀態！';
+    elseif (isset($_POST['toggle_approve'])) {
+        if ($can_approve) {
+            $ts_id = (int)$_POST['timesheet_id'];
+            $current_status = (int)$_POST['current_status'];
+            $new_status = $current_status ? 0 : 1;
+            $approved_by = $new_status ? $current_user_id : null;
+            
+            db_update('timesheets', ['is_approved' => $new_status, 'approved_by' => $approved_by], 'id = ?', [$ts_id]);
+            $success = $new_status ? '工時已審核通過！' : '工時已退回至待審核狀態！';
+        } else {
+            $error = '權限不足！您沒有審核工時的權限。';
+        }
     }
 }
 
@@ -197,9 +202,11 @@ $status_options = [
                     </div>
                 </div>
                 <div>
+                    <?php if(has_any_role(['admin', 'pm', 'developer'])): ?>
                     <button class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addTimesheetModal">
                         <i class="bi bi-plus-circle me-1"></i> 申報工時
                     </button>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -369,7 +376,7 @@ $status_options = [
                                                     <button type="submit" name="delete_timesheet" class="btn btn-sm btn-light border text-danger" title="刪除"><i class="bi bi-trash3"></i></button>
                                                 </form>
                                             <?php else: ?>
-                                                <button class="btn btn-sm btn-light border text-muted disabled"><i class="bi bi-lock"></i></button>
+                                                <button class="btn btn-sm btn-light border text-muted disabled" title="權限不足"><i class="bi bi-lock"></i></button>
                                             <?php endif; ?>
                                         </div>
                                     </td>
@@ -489,6 +496,7 @@ $status_options = [
             </div>
             <?php endif; ?>
 
+        <?php if(has_any_role(['admin', 'pm', 'developer'])): ?>
         <div class="modal fade" id="addTimesheetModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
@@ -553,13 +561,14 @@ $status_options = [
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0 pb-4 px-4">
-                    <button type="button" class="btn btn-light border fw-medium" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-secondary border fw-medium" data-bs-dismiss="modal">取消</button>
                     <button type="submit" class="btn btn-primary px-4 shadow-sm"><i class="bi bi-check-lg me-1"></i> 提交申報</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
