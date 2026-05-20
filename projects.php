@@ -157,9 +157,11 @@ include 'includes/header.php';
                     </div>
                 </div>
                 <div>
+                    <?php if(has_any_role(['admin', 'pm'])): ?>
                     <button class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#createProjectModal">
                         <i class="bi bi-plus-circle me-1"></i> 建立新項目
                     </button>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -201,6 +203,7 @@ include 'includes/header.php';
                     <div class="card border-0 shadow-sm h-100 d-flex flex-column" style="transition: transform 0.2s; border-radius: 12px;">
                         <div class="card-body p-4 flex-grow-1 position-relative">
                             
+                            <?php if(has_any_role(['admin', 'pm'])): ?>
                             <div class="position-absolute top-0 end-0 p-3">
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-light border-0 text-muted shadow-none" type="button" data-bs-toggle="dropdown">
@@ -210,7 +213,8 @@ include 'includes/header.php';
                                         <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editProjectModal<?= $p['id'] ?>"><i class="bi bi-pencil-square me-2 text-primary"></i>編輯項目</a></li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <form method="POST" class="m-0 p-0" onsubmit="return confirm('確定要刪除「<?= htmlspecialchars($p['title']) ?>」嗎？\n此動作無法復原！');">
+                                            <form method="POST" class="m-0 p-0" onsubmit="return confirm('確定要刪除「<?= htmlspecialchars($p['title']) ?>」嗎？
+此動作無法復原！');">
                                                 <input type="hidden" name="delete_project_id" value="<?= $p['id'] ?>">
                                                 <button type="submit" name="delete_project" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>刪除項目</button>
                                             </form>
@@ -218,6 +222,7 @@ include 'includes/header.php';
                                     </ul>
                                 </div>
                             </div>
+                            <?php endif; ?>
 
                             <div class="d-flex align-items-start mb-3 gap-2">
                                 <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1 small"><?= $svc_label ?></span>
@@ -261,11 +266,14 @@ include 'includes/header.php';
                                 </div>
                                 <small class="text-slate-600 fw-medium"><?= htmlspecialchars($p['pm_name'] ?? '未指派 PM') ?></small>
                             </div>
+                            <?php if(has_any_role(['admin', 'pm', 'finance'])): ?>
                             <div class="fw-bold text-slate-800 small">HK$ <?= number_format($p['budget'], 0) ?></div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
 
+                <?php if(has_any_role(['admin', 'pm'])): ?>
                 <div class="modal fade" id="editProjectModal<?= $p['id'] ?>" tabindex="-1">
                     <div class="modal-dialog modal-lg modal-dialog-centered">
                         <div class="modal-content border-0 shadow-lg">
@@ -355,6 +363,7 @@ include 'includes/header.php';
                         </div>
                     </div>
                 </div>
+                <?php endif; ?>
                 <?php endforeach; ?>
 
                 <?php if (empty($projects)): ?>
@@ -387,8 +396,9 @@ include 'includes/header.php';
             </div>
             <?php endif; ?>
 
+        <?php if(has_any_role(['admin', 'pm'])): ?>
         <div class="modal fade" id="createProjectModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
             <form method="POST">
                 <div class="modal-header border-0 pb-0 pt-4 px-4">
@@ -463,5 +473,6 @@ include 'includes/header.php';
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>

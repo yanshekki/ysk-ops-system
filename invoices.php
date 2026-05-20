@@ -150,9 +150,11 @@ include 'includes/header.php';
                     </div>
                 </div>
                 <div>
+                    <?php if(has_any_role(['admin', 'finance'])): ?>
                     <button class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#createInvoiceModal">
                         <i class="bi bi-plus-circle me-1"></i> 開立新發票
                     </button>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -238,17 +240,21 @@ include 'includes/header.php';
                                             <a href="invoice_pdf.php?id=<?= $i['id'] ?>" target="_blank" class="btn btn-sm btn-indigo text-white shadow-sm" style="background-color:#4f46e5;" title="下載/列印 PDF">
                                                 <i class="bi bi-printer"></i>
                                             </a>
+                                            <?php if(has_any_role(['admin', 'finance'])): ?>
                                             <button class="btn btn-sm btn-light border text-primary" data-bs-toggle="modal" data-bs-target="#editInvoiceModal<?= $i['id'] ?>" title="編輯與更改狀態">
                                                 <i class="bi bi-pencil-square"></i>
                                             </button>
-                                            <form method="POST" class="d-inline" onsubmit="return confirm('確定要刪除發票 <?= htmlspecialchars($i['invoice_number']) ?> 嗎？\n注意：刪除後將無法復原！');">
+                                            <form method="POST" class="d-inline" onsubmit="return confirm('確定要刪除發票 <?= htmlspecialchars($i['invoice_number']) ?> 嗎？
+注意：刪除後將無法復原！');">
                                                 <input type="hidden" name="delete_invoice_id" value="<?= $i['id'] ?>">
                                                 <button type="submit" name="delete_invoice" class="btn btn-sm btn-light border text-danger" title="刪除"><i class="bi bi-trash"></i></button>
                                             </form>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
 
+                                <?php if(has_any_role(['admin', 'finance'])): ?>
                                 <div class="modal fade" id="editInvoiceModal<?= $i['id'] ?>" tabindex="-1">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content border-0 shadow-lg">
@@ -312,6 +318,7 @@ include 'includes/header.php';
                                         </div>
                                     </div>
                                 </div>
+                                <?php endif; ?>
                                 <?php endforeach; ?>
 
                                 <?php if (empty($invoices)): ?>
@@ -348,6 +355,7 @@ include 'includes/header.php';
             </div>
             <?php endif; ?>
 
+        <?php if(has_any_role(['admin', 'finance'])): ?>
         <div class="modal fade" id="createInvoiceModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
@@ -412,5 +420,6 @@ include 'includes/header.php';
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>

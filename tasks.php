@@ -53,6 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'due_date' => !empty($_POST['due_date']) ? $_POST['due_date'] : null,
             'estimated_hours' => (float)($_POST['estimated_hours'] ?? 0)
         ];
+        
+        // Developer 只能改 Status，其他由 admin/pm 處理
+        if (has_any_role(['developer']) && !has_any_role(['admin', 'pm'])) {
+            $data = ['status' => $_POST['status'] ?? 'todo'];
+        }
+
         db_update('tasks', $data, 'id = ?', [$task_id]);
         $success = '任務內容已成功更新！';
     }
@@ -150,9 +156,11 @@ include 'includes/header.php';
                     </div>
                 </div>
                 <div>
+                    <?php if(has_any_role(['admin', 'pm'])): ?>
                     <button class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addTaskModal">
                         <i class="bi bi-plus-circle me-1"></i> 新增任務
                     </button>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -247,17 +255,23 @@ include 'includes/header.php';
                                     </td>
                                     <td class="text-end pe-4">
                                         <div class="d-flex justify-content-end gap-2">
+                                            <?php if(has_any_role(['admin', 'pm']) || (has_role('developer') && $t['assigned_to_id'] == $_SESSION['user_id'])): ?>
                                             <button class="btn btn-sm btn-light border text-primary" data-bs-toggle="modal" data-bs-target="#editTaskModal<?= $t['id'] ?>" title="編輯任務">
                                                 <i class="bi bi-pencil-square"></i>
                                             </button>
+                                            <?php endif; ?>
+                                            
+                                            <?php if(has_any_role(['admin', 'pm'])): ?>
                                             <form method="POST" class="d-inline" onsubmit="return confirm('確定要刪除任務「<?= htmlspecialchars($t['title']) ?>」嗎？');">
                                                 <input type="hidden" name="delete_task_id" value="<?= $t['id'] ?>">
                                                 <button type="submit" name="delete_task" class="btn btn-sm btn-light border text-danger" title="刪除"><i class="bi bi-trash"></i></button>
                                             </form>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
 
+                                <?php if(has_any_role(['admin', 'pm']) || (has_role('developer') && $t['assigned_to_id'] == $_SESSION['user_id'])): ?>
                                 <div class="modal fade" id="editTaskModal<?= $t['id'] ?>" tabindex="-1">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content border-0 shadow-lg">
@@ -275,6 +289,8 @@ include 'includes/header.php';
                                                     <input type="hidden" name="edit_task" value="1">
                                                     <input type="hidden" name="task_id" value="<?= $t['id'] ?>">
                                                     <div class="row g-3">
+                                                        <?php if(has_any_role(['admin', 'pm'])): ?>
+                                                        <!-- PM / Admin 完整編輯表單 -->
                                                         <div class="col-12">
                                                             <label class="form-label text-slate-500 fw-semibold small mb-1">任務標題 *</label>
                                                             <input type="text" name="title" class="form-control shadow-none fw-bold" value="<?= htmlspecialchars($t['title']) ?>" required>
@@ -324,6 +340,21 @@ include 'includes/header.php';
                                                             <label class="form-label text-slate-500 fw-semibold small mb-1">任務具體內容描述</label>
                                                             <textarea name="description" class="form-control shadow-none bg-light" rows="3"><?= htmlspecialchars($t['description']) ?></textarea>
                                                         </div>
+                                                        <?php else: ?>
+                                                        <!-- Developer 只能更新狀態的精簡表單 -->
+                                                        <div class="col-12">
+                                                            <h5 class="fw-bold text-slate-800 mb-1"><?= htmlspecialchars($t['title']) ?></h5>
+                                                            <p class="text-muted small mb-4"><?= htmlspecialchars($t['description']) ?></p>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <label class="form-label text-slate-500 fw-semibold small mb-1">更新當前狀態</label>
+                                                            <select name="status" class="form-select shadow-none border-primary">
+                                                                <?php foreach ($status_badges as $val => $opt): ?>
+                                                                    <option value="<?= $val ?>" <?= $t['status'] === $val ? 'selected' : '' ?>><?= $opt['label'] ?></option>
+                                                                <?php endforeach; ?>
+                                                            </select>
+                                                        </div>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </div>
                                                 <div class="modal-footer border-0 pt-0 pb-4 px-4">
@@ -334,6 +365,7 @@ include 'includes/header.php';
                                         </div>
                                     </div>
                                 </div>
+                                <?php endif; ?>
                                 <?php endforeach; ?>
 
                                 <?php if (empty($tasks)): ?>
@@ -370,6 +402,7 @@ include 'includes/header.php';
             </div>
             <?php endif; ?>
 
+        <?php if(has_any_role(['admin', 'pm'])): ?>
         <div class="modal fade" id="addTaskModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
@@ -438,5 +471,6 @@ include 'includes/header.php';
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>

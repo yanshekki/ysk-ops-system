@@ -185,9 +185,13 @@ $status_options = [
                     <h2 class="h3 fw-bold mb-1 text-slate-800"><i class="bi bi-arrow-repeat me-2 text-primary"></i> 周期性發票管理</h2>
                     <p class="text-muted mb-0 d-none d-md-block">設定維護合約 (SLA)、雲端租賃等自動定期計費與開單排程</p>
                 </div>
-                <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#createRecurringModal">
-                    <i class="bi bi-plus-circle me-1"></i> 新增周期計費
-                </button>
+                <div>
+                    <?php if(has_any_role(['admin', 'finance'])): ?>
+                    <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#createRecurringModal">
+                        <i class="bi bi-plus-circle me-1"></i> 新增周期計費
+                    </button>
+                    <?php endif; ?>
+                </div>
             </div>
             
             <div class="card mb-4 border-0 shadow-sm">
@@ -271,37 +275,43 @@ $status_options = [
                                         </span>
                                     </td>
                                     <td class="text-end pe-4">
-                                        <?php if ($r['status'] == 'active'): ?>
-                                            <form method="POST" class="d-inline" onsubmit="return confirm('確定要立即手動生成一張新發票嗎？\n生成後，下次發票日期會自動延後一個週期。');">
+                                        <?php if(has_any_role(['admin', 'finance'])): ?>
+                                            <?php if ($r['status'] == 'active'): ?>
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('確定要立即手動生成一張新發票嗎？
+生成後，下次發票日期會自動延後一個週期。');">
+                                                    <input type="hidden" name="recurring_id" value="<?= $r['id'] ?>">
+                                                    <button type="submit" name="generate_invoice" class="btn btn-sm btn-light border text-success me-1" title="立即生成發票">
+                                                        <i class="bi bi-file-earmark-plus-fill"></i>
+                                                    </button>
+                                                </form>
+                                                <form method="POST" class="d-inline">
+                                                    <input type="hidden" name="recurring_id" value="<?= $r['id'] ?>">
+                                                    <button type="submit" name="action" value="pause" class="btn btn-sm btn-light border text-warning me-1" title="暫停執行">
+                                                        <i class="bi bi-pause-fill"></i>
+                                                    </button>
+                                                </form>
+                                            <?php elseif ($r['status'] == 'paused'): ?>
+                                                <form method="POST" class="d-inline">
+                                                    <input type="hidden" name="recurring_id" value="<?= $r['id'] ?>">
+                                                    <button type="submit" name="action" value="resume" class="btn btn-sm btn-light border text-success me-1" title="恢復執行">
+                                                        <i class="bi bi-play-fill"></i>
+                                                    </button>
+                                                </form>
+                                            <?php endif; ?>
+                                            
+                                            <button class="btn btn-sm btn-light border text-primary me-1" data-bs-toggle="modal" data-bs-target="#editRecurringModal<?= $r['id'] ?>" title="編輯規則"><i class="bi bi-pencil-square"></i></button>
+                                            
+                                            <form method="POST" class="d-inline" onsubmit="return confirm('確定要永久刪除此周期性發票規則嗎？');">
                                                 <input type="hidden" name="recurring_id" value="<?= $r['id'] ?>">
-                                                <button type="submit" name="generate_invoice" class="btn btn-sm btn-light border text-success me-1" title="立即生成發票">
-                                                    <i class="bi bi-file-earmark-plus-fill"></i>
-                                                </button>
+                                                <button type="submit" name="action" value="delete" class="btn btn-sm btn-light border text-danger" title="刪除"><i class="bi bi-trash3"></i></button>
                                             </form>
-                                            <form method="POST" class="d-inline">
-                                                <input type="hidden" name="recurring_id" value="<?= $r['id'] ?>">
-                                                <button type="submit" name="action" value="pause" class="btn btn-sm btn-light border text-warning me-1" title="暫停執行">
-                                                    <i class="bi bi-pause-fill"></i>
-                                                </button>
-                                            </form>
-                                        <?php elseif ($r['status'] == 'paused'): ?>
-                                            <form method="POST" class="d-inline">
-                                                <input type="hidden" name="recurring_id" value="<?= $r['id'] ?>">
-                                                <button type="submit" name="action" value="resume" class="btn btn-sm btn-light border text-success me-1" title="恢復執行">
-                                                    <i class="bi bi-play-fill"></i>
-                                                </button>
-                                            </form>
+                                        <?php else: ?>
+                                            <button class="btn btn-sm btn-light border text-muted disabled"><i class="bi bi-lock"></i></button>
                                         <?php endif; ?>
-                                        
-                                        <button class="btn btn-sm btn-light border text-primary me-1" data-bs-toggle="modal" data-bs-target="#editRecurringModal<?= $r['id'] ?>" title="編輯規則"><i class="bi bi-pencil-square"></i></button>
-                                        
-                                        <form method="POST" class="d-inline" onsubmit="return confirm('確定要永久刪除此周期性發票規則嗎？');">
-                                            <input type="hidden" name="recurring_id" value="<?= $r['id'] ?>">
-                                            <button type="submit" name="action" value="delete" class="btn btn-sm btn-light border text-danger" title="刪除"><i class="bi bi-trash3"></i></button>
-                                        </form>
                                     </td>
                                 </tr>
                                 
+                                <?php if(has_any_role(['admin', 'finance'])): ?>
                                 <div class="modal fade" id="editRecurringModal<?= $r['id'] ?>" tabindex="-1">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content border-0 shadow-lg">
@@ -407,6 +417,7 @@ $status_options = [
                                         </div>
                                     </div>
                                 </div>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                             
                             <?php if (empty($recurring_invoices)): ?>
@@ -446,6 +457,7 @@ $status_options = [
     </div>
 </div>
 
+<?php if(has_any_role(['admin', 'finance'])): ?>
 <div class="modal fade" id="createRecurringModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
@@ -540,5 +552,6 @@ $status_options = [
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>
