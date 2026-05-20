@@ -2,8 +2,8 @@
 -- 包含最新 SaaS 級別結構與大量測試數據
 -- 執行前請確認已選擇對應的資料庫，或直接執行以下全部代碼
 
-CREATE DATABASE IF NOT EXISTS ysk_ops CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE ysk_ops;
+CREATE DATABASE IF NOT EXISTS ki_ops CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE ki_ops;
 
 -- 停用外鍵檢查以方便重建
 SET FOREIGN_KEY_CHECKS = 0;
