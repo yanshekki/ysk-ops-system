@@ -61,7 +61,7 @@
 
 | 網絡 (Network) | 地址 (Address) |
 |---------|---------|
-| **EVM** (ETH/BSC/Polygon) | `yanshekki.eth` |
+| **EVM** (ETH/BSC/AVAX) | `yanshekki.eth` |
 | **NEAR** | `yanshekki.near` |
 | **ADA** (Cardano) | `$yanshekki` |
 
