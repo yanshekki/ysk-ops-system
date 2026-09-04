@@ -49,7 +49,7 @@ $expired_date = ['status' => 'sent', 'valid_until' => '2020-01-01', 'converted_i
 $accepted = ['status' => 'accepted', 'valid_until' => '2020-01-01', 'converted_invoice_id' => null];
 $converted = ['status' => 'converted', 'valid_until' => '2026-12-01', 'converted_invoice_id' => 9];
 
-if (!quote_can('convert', $sent)) fail('sent convert');
+if (quote_can('convert', $sent)) fail('sent must not convert until accepted');
 if (quote_can('convert', $expired_date)) fail('expired sent must not convert');
 if (!quote_can('convert', $accepted)) fail('accepted can convert even after valid_until');
 if (quote_can('convert', $converted)) fail('double convert');

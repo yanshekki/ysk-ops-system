@@ -134,6 +134,7 @@ include 'includes/header.php';
     .catalog-chip { border: 1px solid #e2e8f0; background: #fff; border-radius: 999px; padding: 4px 12px; font-size: 0.8rem; cursor: pointer; }
     .catalog-chip:hover { border-color: #4f46e5; color: #4f46e5; background: #eef2ff; }
     .quote-sticky { position: sticky; bottom: 0; background: #fff; border-top: 1px solid #e2e8f0; z-index: 20; }
+    #itemsBody { padding-bottom: 88px; }
     .item-row textarea { min-height: 180px; font-size: 0.85rem; line-height: 1.55; white-space: pre-wrap; }
     .catalog-scroll { max-height: 280px; overflow-y: auto; }
 </style>
@@ -383,44 +384,70 @@ function nextIndex(){
 
 function addItemRow(data = {}){
     const i = nextIndex();
-    const billingOpts = Object.entries(BILLING).map(([k,v]) => `<option value="${k}" ${data.billing_type===k?'selected':''}>${v.zh}</option>`).join('');
     const wrap = document.createElement('div');
     wrap.className = 'item-row border rounded-3 p-3 mb-3 bg-light';
-    wrap.innerHTML = `
-        <div class="row g-2">
-            <div class="col-md-6">
-                <input type="hidden" name="items[${i}][catalog_key]" value="${data.key||data.catalog_key||''}" class="js-catalog">
-                <label class="form-label small text-muted mb-1">項目名稱</label>
-                <input type="text" name="items[${i}][title]" class="form-control form-control-sm shadow-none js-title" value="${(data.title||'').replace(/"/g,'&quot;')}" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small text-muted mb-1">計費週期</label>
-                <select name="items[${i}][billing_type]" class="form-select form-select-sm shadow-none js-billing">${billingOpts}</select>
-            </div>
-            <div class="col-md-3 text-end">
-                <button type="button" class="btn btn-sm btn-outline-danger mt-4" onclick="this.closest('.item-row').remove(); recalc();">刪除</button>
-            </div>
-            <div class="col-12">
-                <label class="form-label small text-muted mb-1">說明（印上 PDF）</label>
-                <textarea name="items[${i}][description]" class="form-control shadow-none js-desc">${data.description||''}</textarea>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small text-muted mb-1">數量</label>
-                <input type="number" step="0.01" min="0.01" name="items[${i}][qty]" class="form-control form-control-sm shadow-none js-qty" value="${data.qty||1}">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small text-muted mb-1">單位</label>
-                <input type="text" name="items[${i}][unit]" class="form-control form-control-sm shadow-none js-unit" value="${data.unit||'項'}">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small text-muted mb-1">單價 HKD</label>
-                <input type="number" step="0.01" min="0" name="items[${i}][unit_price]" class="form-control form-control-sm shadow-none js-price" value="${data.unit_price||0}">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small text-muted mb-1">小計</label>
-                <div class="form-control form-control-sm bg-white fw-bold js-line">HK$ 0.00</div>
-            </div>
-        </div>`;
+    const row = document.createElement('div');
+    row.className = 'row g-2';
+
+    const colTitle = document.createElement('div');
+    colTitle.className = 'col-md-6';
+    const hid = document.createElement('input');
+    hid.type = 'hidden'; hid.name = `items[${i}][catalog_key]`; hid.className = 'js-catalog';
+    hid.value = data.key || data.catalog_key || '';
+    const labTitle = document.createElement('label');
+    labTitle.className = 'form-label small text-muted mb-1'; labTitle.textContent = '項目名稱';
+    const inpTitle = document.createElement('input');
+    inpTitle.type = 'text'; inpTitle.name = `items[${i}][title]`; inpTitle.className = 'form-control form-control-sm shadow-none js-title';
+    inpTitle.required = true; inpTitle.value = data.title || '';
+    colTitle.append(hid, labTitle, inpTitle);
+
+    const colBill = document.createElement('div');
+    colBill.className = 'col-md-3';
+    const labBill = document.createElement('label');
+    labBill.className = 'form-label small text-muted mb-1'; labBill.textContent = '計費週期';
+    const sel = document.createElement('select');
+    sel.name = `items[${i}][billing_type]`; sel.className = 'form-select form-select-sm shadow-none js-billing';
+    Object.entries(BILLING).forEach(([k,v]) => {
+        const opt = document.createElement('option');
+        opt.value = k; opt.textContent = v.zh;
+        if ((data.billing_type || 'one_time') === k) opt.selected = true;
+        sel.appendChild(opt);
+    });
+    colBill.append(labBill, sel);
+
+    const colDel = document.createElement('div');
+    colDel.className = 'col-md-3 text-end';
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button'; btnDel.className = 'btn btn-sm btn-outline-danger mt-4'; btnDel.textContent = '刪除';
+    btnDel.addEventListener('click', () => { wrap.remove(); recalc(); });
+    colDel.appendChild(btnDel);
+
+    const colDesc = document.createElement('div');
+    colDesc.className = 'col-12';
+    const labDesc = document.createElement('label');
+    labDesc.className = 'form-label small text-muted mb-1'; labDesc.textContent = '說明（印上 PDF）';
+    const ta = document.createElement('textarea');
+    ta.name = `items[${i}][description]`; ta.className = 'form-control shadow-none js-desc';
+    ta.value = data.description || '';
+    colDesc.append(labDesc, ta);
+
+    function field(colClass, label, name, cls, attrs) {
+        const col = document.createElement('div'); col.className = colClass;
+        const lab = document.createElement('label'); lab.className = 'form-label small text-muted mb-1'; lab.textContent = label;
+        const inp = document.createElement('input');
+        Object.assign(inp, attrs); inp.name = name; inp.className = 'form-control form-control-sm shadow-none ' + cls;
+        col.append(lab, inp); return col;
+    }
+    const colQty = field('col-md-3', '數量', `items[${i}][qty]`, 'js-qty', {type:'number', step:'0.01', min:'0.01', value: String(data.qty || 1)});
+    const colUnit = field('col-md-3', '單位', `items[${i}][unit]`, 'js-unit', {type:'text', value: data.unit || '項'});
+    const colPrice = field('col-md-3', '單價 HKD', `items[${i}][unit_price]`, 'js-price', {type:'number', step:'0.01', min:'0', value: String(data.unit_price || 0)});
+    const colLine = document.createElement('div'); colLine.className = 'col-md-3';
+    const labLine = document.createElement('label'); labLine.className = 'form-label small text-muted mb-1'; labLine.textContent = '小計';
+    const line = document.createElement('div'); line.className = 'form-control form-control-sm bg-white fw-bold js-line'; line.textContent = 'HK$ 0.00';
+    colLine.append(labLine, line);
+
+    row.append(colTitle, colBill, colDel, colDesc, colQty, colUnit, colPrice, colLine);
+    wrap.appendChild(row);
     document.getElementById('itemsBody').appendChild(wrap);
     wrap.querySelectorAll('input,select,textarea').forEach(el => el.addEventListener('input', recalc));
     recalc();

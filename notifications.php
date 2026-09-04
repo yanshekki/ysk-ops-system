@@ -161,7 +161,8 @@ include 'includes/header.php';
                 </div>
             </div>
             
-            <?php if ($success): ?><div class="alert alert-success border-0 shadow-sm"><i class="bi bi-check-circle-fill me-2"></i><?= $success ?></div><?php endif; ?>
+            <div class="alert alert-warning border-0 shadow-sm"><i class="bi bi-info-circle me-2"></i>通知中心目前只<strong>記錄模擬發送</strong>，不會真正打出 WhatsApp 或 Email。</div>
+            <?php if ($success): ?><div class="alert alert-success border-0 shadow-sm"><i class="bi bi-check-circle-fill me-2"></i><?= escape($success) ?></div><?php endif; ?>
             <?php if ($error): ?><div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= $error ?></div><?php endif; ?>
             
             <div class="row g-4 mt-1">

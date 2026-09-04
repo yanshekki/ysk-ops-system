@@ -403,7 +403,7 @@ include 'includes/header.php';
                 </div>
                 <div class="modal-body px-4">
                     <input type="hidden" name="quote_id" value="<?= (int)$q['id'] ?>">
-                    <p class="text-muted small">會開一張發票（含一次性 + 各週期首期）。週期單的下次執行日會跳過第一期，避免雙重收費。報價金額不會計入已收款。</p>
+                    <p class="text-muted small">只可轉換<strong>已接受</strong>的報價。會開發票（含一次性 + 各週期首期）。週期下次執行日跳過第一期。報價金額不會計入已收款。</p>
                     <div class="table-responsive mb-3">
                         <table class="table table-sm mb-0">
                             <thead><tr><th>首張發票明細</th><th class="text-end">金額</th></tr></thead>

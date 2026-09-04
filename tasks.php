@@ -92,6 +92,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ==============================================
 $where_clauses = ["1=1"];
 $params = [];
+$current_role = $_SESSION['user']['role'] ?? '';
+if ($current_role === 'developer') {
+    $where_clauses[] = 't.assigned_to_id = ?';
+    $params[] = (int)$_SESSION['user_id'];
+}
 
 if ($search) {
     $where_clauses[] = "(t.title LIKE ? OR t.description LIKE ?)";
@@ -212,7 +217,7 @@ include 'includes/header.php';
                 </div>
             </div>
 
-            <?php if ($success): ?><div class="alert alert-success border-0 shadow-sm"><i class="bi bi-check-circle me-2"></i><?= $success ?></div><?php endif; ?>
+            <?php if ($success): ?><div class="alert alert-success border-0 shadow-sm"><i class="bi bi-check-circle me-2"></i><?= escape($success) ?></div><?php endif; ?>
             <?php if ($error): ?><div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-circle me-2"></i><?= $error ?></div><?php endif; ?>
 
             <div class="card border-0 shadow-sm mb-4">

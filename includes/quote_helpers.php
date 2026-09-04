@@ -208,10 +208,7 @@ function quote_can(string $action, array $quote): bool {
             if (!empty($quote['converted_invoice_id'])) {
                 return false;
             }
-            if ($status === 'accepted') {
-                return true;
-            }
-            return $status === 'sent' && quote_is_valid_for_action($quote);
+            return $status === 'accepted';
         case 'revise':
             return $status === 'sent';
         case 'duplicate':

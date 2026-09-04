@@ -28,9 +28,12 @@ $can_approve = in_array($current_user_role, ['admin', 'pm']);
 // 處理表單提交 (新增、編輯、刪除、審核) - 🛡️ 嚴格後端權限驗證
 // ==============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    
+    $post_role = $_SESSION['user']['role'] ?? '';
+    if ($post_role === 'finance' && (isset($_POST['add_timesheet']) || isset($_POST['edit_timesheet']) || isset($_POST['delete_timesheet']))) {
+        $error = '權限不足！財務角色只可查閱工時，不能申報或修改。';
+    }
     // 1. 新增工時 (所有具備填報權限的角色皆可)
-    if (isset($_POST['add_timesheet'])) {
+    elseif (isset($_POST['add_timesheet'])) {
         $data = [
             'user_id' => $current_user_id,
             'project_id' => (int)$_POST['project_id'],
@@ -304,7 +307,7 @@ $status_options = [
                 </div>
             </div>
 
-            <?php if ($success): ?><div class="alert alert-success border-0 shadow-sm"><i class="bi bi-check-circle me-2"></i><?= $success ?></div><?php endif; ?>
+            <?php if ($success): ?><div class="alert alert-success border-0 shadow-sm"><i class="bi bi-check-circle me-2"></i><?= escape($success) ?></div><?php endif; ?>
             <?php if ($error): ?><div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-circle me-2"></i><?= $error ?></div><?php endif; ?>
 
             <div class="card border-0 shadow-sm mb-4">
