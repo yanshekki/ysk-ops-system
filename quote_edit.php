@@ -134,7 +134,7 @@ include 'includes/header.php';
     .catalog-chip { border: 1px solid #e2e8f0; background: #fff; border-radius: 999px; padding: 4px 12px; font-size: 0.8rem; cursor: pointer; }
     .catalog-chip:hover { border-color: #4f46e5; color: #4f46e5; background: #eef2ff; }
     .quote-sticky { position: sticky; bottom: 0; background: #fff; border-top: 1px solid #e2e8f0; z-index: 20; }
-    .item-row textarea { min-height: 64px; font-size: 0.85rem; }
+    .item-row textarea { min-height: 180px; font-size: 0.85rem; line-height: 1.55; white-space: pre-wrap; }
     .catalog-scroll { max-height: 280px; overflow-y: auto; }
 </style>
 

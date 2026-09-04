@@ -6,8 +6,35 @@
  */
 
 function quote_catalog_groups(): array {
-    $app_store_note = "App 上架：使用 YSK Limited 開發者帳號則官方平台費全免；使用客戶公司帳號則客戶自付 Apple／Google 年費。";
-    $remote_common = "合約一年起、只限遠端。所有計劃包含 1 部美國獨立 IP 伺服器 (VPS)。私有 LLM 全託管為獨立年費，不包含於此外判月費。\n" . $app_store_note;
+    $vps_ysk_server = <<<'TXT'
+【託管主機】
+• 1 部美國獨立 IP 伺服器 (VPS)，含系統設定及域名綁定
+• 全機預裝 YSK Server（單機 Linux 控制平面：網頁面板 + CLI + API）
+
+【YSK Server 安全防護】
+• 防護中心：防火牆、fail2ban、IP 封鎖／解封
+• SSH 身分管理；面板及 SSH 雙重驗證 (2FA)
+• HTTPS 管理面板（埠 9287）；網站 SSL／Let's Encrypt
+• 危險主機操作預設 dry-run，須明確授權才真正套用
+• 單機控制平面，資料留在您的伺服器，並非多租戶共享面板
+
+【資料庫與備份】
+• 支援 MySQL／MariaDB、PostgreSQL、Redis
+• 定期資料庫備份及主機資料備份，降低誤刪、故障或勒索造成的資料遺失風險
+
+【YSK Server 營運優點】
+• 面板、命令列、API 同一核心，方便人手操作及自動化
+• 一部主機管理網站專案、檔案、電郵、DNS／SSL 與 Docker
+• 誠實運維：未套用到主機不會假裝已上線
+• MIT 開源；主機由您擁有（或本計劃提供之 VPS）
+TXT;
+
+    $contract_notes = <<<'TXT'
+【合約說明】
+• 一年約、只限遠端
+• 私有 LLM 全託管為獨立年費，不包含於此外判月費
+• App 上架：使用 YSK Limited 開發者帳號則官方平台費全免；使用客戶公司帳號則客戶自付 Apple／Google 年費
+TXT;
 
     return [
         'outsourcing' => [
@@ -17,7 +44,7 @@ function quote_catalog_groups(): array {
                 [
                     'key' => 'remote_basic',
                     'title' => '開發者外判 — 基本計劃',
-                    'description' => "每月 5 條遠端技術支援（Bug 修復、程式碼諮詢及架構建議）。\n包含網站、iOS 及 Android 雙平台，合共 5 頁動態頁面開發。\n包含 1 部美國獨立 IP 伺服器 (VPS)，含基礎系統設定及域名綁定。\n" . $remote_common,
+                    'description' => "【遠端技術支援】\n• 每月 5 條：系統 Bug 修復、程式碼諮詢及架構建議（只限遠端）\n\n【開發配額】\n• 網站、iOS 及 Android 雙平台，合共 5 頁動態頁面\n\n{$vps_ysk_server}\n\n{$contract_notes}",
                     'billing_type' => 'monthly',
                     'unit' => '月',
                     'unit_price' => 2000,
@@ -27,7 +54,7 @@ function quote_catalog_groups(): array {
                 [
                     'key' => 'remote_standard',
                     'title' => '開發者外判 — 標準計劃',
-                    'description' => "每月 20 條遠端技術支援（深度程式碼支援、API 串接除錯及效能優化）。\n包含網站、iOS 及 Android 雙平台，合共 20 頁動態頁面開發。\n包含 1 部美國獨立 IP 伺服器 (VPS)，配備進階效能、自動化備份與防火牆設定。\n" . $remote_common,
+                    'description' => "【遠端技術支援】\n• 每月 20 條：深度程式碼支援、API 串接除錯及效能優化（只限遠端）\n\n【開發配額】\n• 網站、iOS 及 Android 雙平台，合共 20 頁動態頁面\n\n{$vps_ysk_server}\n\n【本計劃加強】\n• VPS 配備進階效能設定\n\n{$contract_notes}",
                     'billing_type' => 'monthly',
                     'unit' => '月',
                     'unit_price' => 6000,
@@ -37,7 +64,7 @@ function quote_catalog_groups(): array {
                 [
                     'key' => 'remote_premium',
                     'title' => '開發者外判 — 尊貴計劃',
-                    'description' => "每月 50 條遠端技術支援（高階架構支援、資料庫優化與即時漏洞修補）。\n包含網站、iOS 及 Android 雙平台，合共 50 頁動態頁面開發。\n包含 1 部美國獨立 IP 伺服器 (VPS)，提供頂級運算效能、負載平衡及零信任架構設定。\n" . $remote_common,
+                    'description' => "【遠端技術支援】\n• 每月 50 條：高階架構支援、資料庫優化與即時漏洞修補（只限遠端）\n\n【開發配額】\n• 網站、iOS 及 Android 雙平台，合共 50 頁動態頁面\n\n{$vps_ysk_server}\n\n【本計劃加強】\n• 頂級運算效能、負載平衡及零信任架構設定\n\n{$contract_notes}",
                     'billing_type' => 'monthly',
                     'unit' => '月',
                     'unit_price' => 12000,
@@ -47,7 +74,7 @@ function quote_catalog_groups(): array {
                 [
                     'key' => 'remote_enterprise',
                     'title' => '開發者外判 — 企業定製與 AI',
-                    'description' => "自訂 SLA，專屬首席架構師及項目經理對接。\n大型企業網站及跨平台 APP，無頁面數量限制，按規格書敏捷開發。\n大型混合雲（AWS/GCP）叢集、高可用本地 AI 伺服器或區塊鏈節點可另列。\n" . $remote_common . "\n公開價為起步價，本行金額須按規格填寫。",
+                    'description' => "【服務範圍】\n• 自訂 SLA，專屬首席架構師及項目經理對接\n• 大型企業網站及跨平台 APP，無頁面數量限制，按規格書敏捷開發\n• 大型混合雲（AWS／GCP）叢集、高可用本地 AI 伺服器或區塊鏈節點可另列\n\n{$vps_ysk_server}\n\n{$contract_notes}\n• 公開價為起步價，本行金額須按規格填寫",
                     'billing_type' => 'monthly',
                     'unit' => '月',
                     'unit_price' => 0,
@@ -79,7 +106,7 @@ function quote_catalog_groups(): array {
                 [
                     'key' => 'app_custom',
                     'title' => '香港 APP 開發（iOS / Android / Web）',
-                    'description' => "按規格書開發跨平台應用或企業系統（React Native / PHP / Node 等）。\n含 UI/UX 對接、後端資料庫、測試及上架協助。金額按範圍填寫。\n" . $app_store_note,
+                    'description' => "【範圍】\n• 按規格書開發跨平台應用或企業系統（React Native／PHP／Node 等）\n• 含 UI/UX 對接、後端資料庫、測試及上架協助\n• 金額按範圍填寫\n\n【App 上架】\n• 使用 YSK Limited 開發者帳號則官方平台費全免\n• 使用客戶公司帳號則客戶自付 Apple／Google 年費",
                     'billing_type' => 'one_time',
                     'unit' => '項',
                     'unit_price' => 0,
@@ -195,7 +222,7 @@ function quote_catalog_groups(): array {
                 [
                     'key' => 'ysk_server_install',
                     'title' => 'YSK Server 代裝／企業訂造',
-                    'description' => "開源單機 Linux 控制平面之代裝、設定或企業訂造再開發。金額按主機環境與範圍填寫。",
+                    'description' => "【範圍】\n• 開源單機 Linux 控制平面之代裝、加固或企業訂造再開發\n• 金額按主機環境與書面範圍填寫\n\n【安全防護】\n• 防護中心：防火牆、fail2ban、IP 封鎖／解封\n• SSH 身分；面板及 SSH 雙重驗證 (2FA)\n• HTTPS 面板與網站 SSL／Let's Encrypt\n• 危險操作預設 dry-run，須明確授權才套用\n\n【資料庫與備份】\n• MySQL／MariaDB、PostgreSQL、Redis\n• 定期資料庫及主機資料備份\n\n【營運優點】\n• 面板 ≡ CLI ≡ API 同一核心\n• 一部主機管理網站、檔案、電郵、DNS／SSL、Docker\n• 單機控制平面，資料留在您的伺服器，並非多租戶 SaaS",
                     'billing_type' => 'one_time',
                     'unit' => '項',
                     'unit_price' => 0,
