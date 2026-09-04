@@ -1,10 +1,13 @@
 <?php
 /**
- * 複製為 config.local.php 並填入真實資料庫帳密。
- * 此檔唔好 commit。
+ * 本機 development 帳密。複製為以下其中一個（全部 gitignore，唔好 commit）：
+ *   config.development.local.php   ← 建議
+ *   config.local.php               ← 舊名，仍然得
+ *
+ * Production 伺服器請用 config.production.local.php，唔好上傳本機呢個檔。
  */
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'ysk_ops');
 define('DB_USER', 'ysk_db_user');
-define('DB_PASS', 'your_secure_password');
+define('DB_PASS', 'your_local_password');
 define('DB_CHAR', 'utf8mb4');

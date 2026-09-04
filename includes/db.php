@@ -12,7 +12,9 @@ function get_db_connection() {
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
         } catch (PDOException $e) {
-            $hint = '請在網站根目錄建立 config.local.php（可複製 config.local.php.example）並填入真實資料庫帳密。git pull 唔會改呢個檔。';
+            $hint = APP_ENV === 'production'
+                ? '請在伺服器建立 config.production.local.php（可複製 config.production.local.php.example）。呢個檔唔會被 git pull / 上傳程式碼覆蓋。'
+                : '請在本機建立 config.development.local.php 或 config.local.php（可複製 config.local.php.example）。唔好上傳呢個檔去 production。';
             if (defined('APP_DEBUG') && APP_DEBUG) {
                 die('Database connection failed: ' . htmlspecialchars($e->getMessage()) . '<br>' . $hint);
             }

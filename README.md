@@ -49,8 +49,12 @@
 3. **現有 production 資料庫**請跑 additive migration，**不要**重跑會 DROP 表的 `database.sql`：
    `mysql ... ki_ops < migrations/2026-09-04-quotes.sql`
    `mysql ... ki_ops < migrations/2026-09-04-hardening.sql`
-4. 複製 `config.local.php.example` 為 `config.local.php`，填入資料庫帳密（此檔已被 gitignore，`git pull` 不會覆蓋）。
-5. 上傳至任何支援 PHP 的 Web Hosting 或伺服器。
+4. **設定檔已分 development / production**，上傳程式碼唔會蓋到資料庫密碼。
+   - 本機：複製 `config.local.php.example` → `config.development.local.php` 或 `config.local.php`，填入本機 MySQL 帳密。
+   - Production（`ops.ysk.hk`）：喺**伺服器**複製 `config.production.local.php.example` → `config.production.local.php`，填入線上帳密。已有舊嘅 `config.local.php` 仍然會自動用，唔使即改。
+   - `config.php`、`config.development.php`、`config.production.php` 跟 repo 上傳；`*.local.php` 已 gitignore。
+   - 環境自動判斷：`ops.ysk.hk` → production（`APP_DEBUG` 關）；本機 / `127.0.0.1` → development（`APP_DEBUG` 開）。CLI 可用 `config.env.php` 或環境變數 `APP_ENV=production` 鎖定。
+5. 上傳至任何支援 PHP 的 Web Hosting 或伺服器（唔好把本機 `config.local.php` 一齊傳上去）。
 6. 訪問 `index.php` 即可登入。
    - 首次安裝請即刻更改管理員密碼。Sample SQL 的示範帳密僅供本機，**不可用於 production**。
 

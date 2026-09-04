@@ -1,1 +1,3 @@
 config.local.php
+config.*.local.php
+config.env.php

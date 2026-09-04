@@ -1,0 +1,13 @@
+<?php
+/**
+ * Production 帳密。喺伺服器複製為 config.production.local.php。
+ * 此 example 跟 repo；真正嘅 .local.php 已 gitignore，git pull / 上傳程式碼唔會蓋到。
+ *
+ * 第一次上線（而家已經有 config.local.php 都可以繼續用，唔使即改）：
+ *   cp config.local.php config.production.local.php
+ */
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'ysk_ops');
+define('DB_USER', 'ysk_db_user');
+define('DB_PASS', 'your_production_password');
+define('DB_CHAR', 'utf8mb4');
