@@ -244,53 +244,64 @@ include 'includes/header.php';
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0" style="min-width: 960px;">
                             <thead class="bg-light text-slate-600">
                                 <tr>
-                                    <th class="ps-4 py-3">報價單號</th>
+                                    <th class="ps-4 py-3 text-nowrap">報價單號</th>
                                     <th class="py-3">客戶與標題</th>
-                                    <th class="py-3">有效期</th>
-                                    <th class="py-3 text-end">首年合約值</th>
-                                    <th class="py-3 text-center">狀態</th>
-                                    <th class="text-end pe-4 py-3">操作</th>
+                                    <th class="py-3 text-nowrap">有效期</th>
+                                    <th class="py-3 text-end text-nowrap">首年合約值</th>
+                                    <th class="py-3 text-center text-nowrap">狀態</th>
+                                    <th class="text-end pe-4 py-3 text-nowrap">操作</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($quotes as $q):
+                                <?php
+                                $convert_modals = [];
+                                foreach ($quotes as $q):
                                     $badge = $status_badges[$q['status']] ?? $status_badges['draft'];
                                     $items = $quote_items_by_id[(int)$q['id']] ?? [];
                                     $year_one = quote_year_one_value($items);
                                     $expired_soon = $q['status'] === 'sent' && $q['valid_until'] < date('Y-m-d', strtotime('+3 days'));
+                                    if ($can_write && quote_can('convert', $q)) {
+                                        $convert_modals[] = [
+                                            'q' => $q,
+                                            'items' => $items,
+                                            'year_one' => $year_one,
+                                            'preview_lines' => quote_first_invoice_items($items),
+                                            'recurring_preview' => array_values(array_filter($items, fn($it) => quote_is_recurring_billing($it['billing_type']))),
+                                        ];
+                                    }
                                 ?>
                                 <tr class="<?= in_array($q['status'], ['declined','expired','superseded'], true) ? 'opacity-75' : '' ?>">
-                                    <td class="ps-4">
+                                    <td class="ps-4 text-nowrap">
                                         <div class="fw-bold text-slate-800"><?= htmlspecialchars($q['quote_number']) ?></div>
                                         <small class="text-muted"><?= htmlspecialchars($q['issue_date']) ?></small>
                                     </td>
-                                    <td>
+                                    <td style="max-width: 280px;">
                                         <div class="fw-bold text-slate-700">
                                             <?= htmlspecialchars($q['company_name']) ?>
                                             <?php if (($q['client_status'] ?? '') === 'lead'): ?>
                                                 <span class="badge bg-warning bg-opacity-10 text-warning ms-1">潛在</span>
                                             <?php endif; ?>
                                         </div>
-                                        <small class="text-muted"><?= htmlspecialchars($q['title']) ?></small>
+                                        <small class="text-muted d-block text-truncate"><?= htmlspecialchars($q['title']) ?></small>
                                     </td>
-                                    <td>
+                                    <td class="text-nowrap">
                                         <div class="small <?= ($q['status'] === 'sent' && $q['valid_until'] < date('Y-m-d')) || $expired_soon ? 'text-danger fw-bold' : 'text-slate-600' ?>">
                                             <?= htmlspecialchars($q['valid_until']) ?>
                                             <?php if ($expired_soon): ?><i class="bi bi-exclamation-triangle-fill ms-1"></i><?php endif; ?>
                                         </div>
                                     </td>
-                                    <td class="text-end">
+                                    <td class="text-end text-nowrap">
                                         <div class="fw-bold text-slate-800">HK$ <?= number_format($year_one, 0) ?></div>
                                         <small class="text-muted">應付 HK$ <?= number_format((float)$q['total_amount'], 0) ?></small>
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center text-nowrap">
                                         <span class="badge bg-<?= $badge['color'] ?> bg-opacity-10 text-<?= $badge['color'] ?> px-2 py-1"><?= $badge['label'] ?></span>
                                     </td>
                                     <td class="text-end pe-4">
-                                        <div class="d-flex justify-content-end gap-1 flex-wrap">
+                                        <div class="d-inline-flex justify-content-end gap-1 flex-nowrap">
                                             <a href="quote_pdf.php?id=<?= (int)$q['id'] ?>" target="_blank" class="btn btn-sm btn-light border" title="PDF"><i class="bi bi-printer"></i></a>
                                             <?php if ($can_write && quote_can('edit', $q)): ?>
                                                 <a href="quote_edit.php?id=<?= (int)$q['id'] ?>" class="btn btn-sm btn-light border text-primary" title="編輯"><i class="bi bi-pencil-square"></i></a>
@@ -314,7 +325,7 @@ include 'includes/header.php';
                                             </form>
                                             <?php endif; ?>
                                             <?php if ($can_write && quote_can('convert', $q)): ?>
-                                                <button class="btn btn-sm btn-indigo text-white" style="background:#4f46e5;" data-bs-toggle="modal" data-bs-target="#convertModal<?= (int)$q['id'] ?>" title="轉換">
+                                                <button type="button" class="btn btn-sm text-white" style="background:#4f46e5;" data-bs-toggle="modal" data-bs-target="#convertModal<?= (int)$q['id'] ?>" title="轉換">
                                                     <i class="bi bi-arrow-repeat"></i>
                                                 </button>
                                             <?php endif; ?>
@@ -339,70 +350,6 @@ include 'includes/header.php';
                                         </div>
                                     </td>
                                 </tr>
-
-                                <?php if ($can_write && quote_can('convert', $q)):
-                                    $preview_lines = quote_first_invoice_items($items);
-                                    $recurring_preview = array_filter($items, fn($it) => quote_is_recurring_billing($it['billing_type']));
-                                ?>
-                                <div class="modal fade" id="convertModal<?= (int)$q['id'] ?>" tabindex="-1">
-                                    <div class="modal-dialog modal-lg modal-dialog-centered">
-                                        <div class="modal-content border-0 shadow-lg">
-                                            <form method="POST">
-                                                <div class="modal-header border-0 pt-4 px-4">
-                                                    <h5 class="modal-title fw-bold">轉換報價 <?= htmlspecialchars($q['quote_number']) ?></h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body px-4">
-                                                    <input type="hidden" name="quote_id" value="<?= (int)$q['id'] ?>">
-                                                    <p class="text-muted small">會開一張<strong>草稿發票</strong>（含一次性 + 各週期首期）。週期單的下次執行日會跳過第一期，避免雙重收費。報價金額不會計入已收款。</p>
-                                                    <div class="table-responsive mb-3">
-                                                        <table class="table table-sm">
-                                                            <thead><tr><th>首張發票明細</th><th class="text-end">金額</th></tr></thead>
-                                                            <tbody>
-                                                                <?php foreach ($preview_lines as $line): ?>
-                                                                <tr>
-                                                                    <td><?= htmlspecialchars($line['title']) ?></td>
-                                                                    <td class="text-end">HK$ <?= number_format($line['line_total'], 2) ?></td>
-                                                                </tr>
-                                                                <?php endforeach; ?>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                    <?php if ($recurring_preview): ?>
-                                                    <div class="alert alert-light border small mb-3">
-                                                        <strong>其後週期（第一期之後）：</strong>
-                                                        <ul class="mb-0 mt-2">
-                                                            <?php foreach ($recurring_preview as $rp): ?>
-                                                            <li><?= htmlspecialchars($rp['title']) ?> — HK$ <?= number_format($rp['line_total'], 2) ?> / <?= htmlspecialchars(quote_billing_labels()[$rp['billing_type']]['zh']) ?>，下次 <?= quote_next_period_date(date('Y-m-d'), $rp['billing_type']) ?></li>
-                                                            <?php endforeach; ?>
-                                                        </ul>
-                                                    </div>
-                                                    <?php endif; ?>
-                                                    <div class="form-check mb-2">
-                                                        <input class="form-check-input" type="checkbox" name="create_project" id="cp<?= (int)$q['id'] ?>" checked>
-                                                        <label class="form-check-label" for="cp<?= (int)$q['id'] ?>">同時建立專案（預算 = 首年合約值 HK$ <?= number_format($year_one, 0) ?>）</label>
-                                                    </div>
-                                                    <div class="form-check mb-3">
-                                                        <input class="form-check-input" type="checkbox" name="send_invoice" id="si<?= (int)$q['id'] ?>" checked>
-                                                        <label class="form-check-label" for="si<?= (int)$q['id'] ?>">轉換後直接將發票標為「已發送」（客戶 Portal 即時可見）</label>
-                                                    </div>
-                                                    <label class="form-label small text-muted">專案負責人 PM（可空）</label>
-                                                    <select name="assigned_pm_id" class="form-select shadow-none">
-                                                        <option value="">未指派</option>
-                                                        <?php foreach ($pms as $pm): ?>
-                                                            <option value="<?= (int)$pm['id'] ?>"><?= htmlspecialchars($pm['full_name']) ?></option>
-                                                        <?php endforeach; ?>
-                                                    </select>
-                                                </div>
-                                                <div class="modal-footer border-0 pb-4 px-4">
-                                                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">取消</button>
-                                                    <button type="submit" name="convert_quote" class="btn btn-primary">確認轉換</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                                <?php endif; ?>
                                 <?php endforeach; ?>
 
                                 <?php if (empty($quotes)): ?>
@@ -438,5 +385,72 @@ include 'includes/header.php';
                 </nav>
             </div>
             <?php endif; ?>
+
+<?php foreach ($convert_modals ?? [] as $cm):
+    $q = $cm['q'];
+    $year_one = $cm['year_one'];
+    $preview_lines = $cm['preview_lines'];
+    $recurring_preview = $cm['recurring_preview'];
+?>
+<div class="modal fade" id="convertModal<?= (int)$q['id'] ?>" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <form method="POST">
+                <?= csrf_field() ?>
+                <div class="modal-header border-0 pt-4 px-4">
+                    <h5 class="modal-title fw-bold">轉換報價 <?= htmlspecialchars($q['quote_number']) ?></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body px-4">
+                    <input type="hidden" name="quote_id" value="<?= (int)$q['id'] ?>">
+                    <p class="text-muted small">會開一張發票（含一次性 + 各週期首期）。週期單的下次執行日會跳過第一期，避免雙重收費。報價金額不會計入已收款。</p>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>首張發票明細</th><th class="text-end">金額</th></tr></thead>
+                            <tbody>
+                                <?php foreach ($preview_lines as $line): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($line['title']) ?></td>
+                                    <td class="text-end text-nowrap">HK$ <?= number_format($line['line_total'], 2) ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <?php if ($recurring_preview): ?>
+                    <div class="alert alert-light border small mb-3">
+                        <strong>其後週期（第一期之後）：</strong>
+                        <ul class="mb-0 mt-2">
+                            <?php foreach ($recurring_preview as $rp): ?>
+                            <li><?= htmlspecialchars($rp['title']) ?> — HK$ <?= number_format($rp['line_total'], 2) ?> / <?= htmlspecialchars(quote_billing_labels()[$rp['billing_type']]['zh']) ?>，下次 <?= quote_next_period_date(date('Y-m-d'), $rp['billing_type']) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                    <?php endif; ?>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="create_project" id="cp<?= (int)$q['id'] ?>" checked>
+                        <label class="form-check-label" for="cp<?= (int)$q['id'] ?>">同時建立專案（預算 = 首年合約值 HK$ <?= number_format($year_one, 0) ?>）</label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="send_invoice" id="si<?= (int)$q['id'] ?>" checked>
+                        <label class="form-check-label" for="si<?= (int)$q['id'] ?>">轉換後直接將發票標為「已發送」（客戶 Portal 即時可見）</label>
+                    </div>
+                    <label class="form-label small text-muted">專案負責人 PM（可空）</label>
+                    <select name="assigned_pm_id" class="form-select shadow-none">
+                        <option value="">未指派</option>
+                        <?php foreach ($pms as $pm): ?>
+                            <option value="<?= (int)$pm['id'] ?>"><?= htmlspecialchars($pm['full_name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="modal-footer border-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" name="convert_quote" class="btn btn-primary">確認轉換</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endforeach; ?>
 
 <?php include 'includes/footer.php'; ?>
