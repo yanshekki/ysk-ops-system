@@ -24,7 +24,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['client_login'])) {
     $password = $_POST['password'] ?? '';
     
     if (!empty($username) && !empty($password)) {
-        $client = db_fetch_one("SELECT * FROM clients WHERE username = ? AND status = 'active'", [$username]);
+        $client = db_fetch_one(
+            "SELECT * FROM clients WHERE username = ? AND status IN ('active', 'lead')",
+            [$username]
+        );
         
         if ($client && password_verify($password, $client['password_hash'])) {
             session_regenerate_id(true);
