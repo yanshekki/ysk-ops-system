@@ -46,7 +46,9 @@
     </html>
 
 <?php else: ?>
-    </div> <footer class="global-backend-footer border-top py-3 px-4 mt-auto w-100 no-print" style="background-color: #f8fafc; font-size: 0.85rem; color: #64748b;">
+    <?php /* Pages must leave 3 wrappers open: shell d-flex, main flex-column, content p-3. Do not close them before this include. */ ?>
+    </div>
+    <footer class="global-backend-footer border-top py-3 px-4 mt-auto w-100 no-print" style="background-color: #f8fafc; font-size: 0.85rem; color: #64748b;">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
             <div>
                 &copy; <?php echo date('Y'); ?> <strong style="color: #334155;">YSK Ops System</strong>. All rights reserved.

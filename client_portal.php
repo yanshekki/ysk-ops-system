@@ -198,6 +198,7 @@ $inv_status_options = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client Portal | YSK Limited</title>
+    <?php include __DIR__ . '/includes/head_icons.php'; ?>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -213,23 +214,31 @@ $inv_status_options = [
             min-height: 100vh; 
             -webkit-font-smoothing: antialiased;
         }
-        /* Login Page Styles */
         .login-wrapper {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            background:
+                radial-gradient(900px 480px at 8% -8%, rgba(99, 102, 241, 0.38), transparent 55%),
+                radial-gradient(700px 420px at 110% 108%, rgba(46, 160, 67, 0.16), transparent 50%),
+                linear-gradient(160deg, #0f172a 0%, #312e81 55%, #0b1224 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 24px;
         }
         .portal-login-card { 
-            background: #ffffff; 
-            border-radius: 20px; 
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); 
-            border: none;
+            background: rgba(255,255,255,0.97); 
+            border-radius: 22px; 
+            box-shadow: 0 30px 80px -24px rgba(0,0,0,0.5); 
+            border: 1px solid rgba(255,255,255,0.4);
             width: 100%;
             max-width: 420px;
         }
+        .login-logo-mark {
+            width: 64px; height: 64px; border-radius: 16px; background: #0f172a;
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-bottom: 8px; box-shadow: 0 12px 24px -12px rgba(79,70,229,0.8);
+        }
+        .login-logo-mark img { height: 36px; width: auto; }
         
         /* Dashboard Styles */
         .portal-navbar {
@@ -250,16 +259,16 @@ $inv_status_options = [
         .nav-pills .nav-link {
             color: #64748b;
             font-weight: 600;
-            border-radius: 8px;
-            padding: 10px 20px;
-            margin-right: 8px;
+            border-radius: 999px;
+            padding: 8px 18px;
+            margin-right: 6px;
             transition: all 0.2s ease;
         }
-        .nav-pills .nav-link:hover { background-color: #f1f5f9; }
+        .nav-pills .nav-link:hover { background-color: #eef2ff; color: #4338ca; }
         .nav-pills .nav-link.active { 
-            background: var(--brand-color); 
+            background: linear-gradient(135deg, #4f46e5, #4338ca); 
             color: white;
-            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+            box-shadow: 0 8px 16px -8px rgba(79, 70, 229, 0.7);
         }
         .stat-box {
             background: #ffffff;
@@ -289,10 +298,10 @@ $inv_status_options = [
     <div class="login-wrapper">
         <div class="portal-login-card p-4 p-md-5">
             <div class="text-center mb-4">
-                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
-                    <i class="bi bi-shield-lock fs-2"></i>
+                <div class="login-logo-mark">
+                    <img src="assets/favicon.svg" alt="YSK">
                 </div>
-                <h4 class="fw-bold text-slate-800 mb-1">YSK Client Portal</h4>
+                <h4 class="fw-bold text-slate-800 mb-1 mt-3" style="letter-spacing:-0.03em;">YSK Client Portal</h4>
                 <p class="text-muted small">客戶專屬自助服務與專案查詢系統</p>
             </div>
             
@@ -332,8 +341,8 @@ $inv_status_options = [
     <nav class="portal-navbar">
         <div class="container-xl d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <img src="https://ysk.hk/logo.svg" alt="YSK" style="height: 28px; margin-right: 12px;">
-                <span class="fw-bolder text-slate-800 border-start ps-3 ms-1" style="font-size: 1.1rem; letter-spacing: -0.5px;">Client Portal</span>
+                <img src="assets/favicon.svg" alt="YSK" width="32" height="32" class="rounded-3 me-2" style="background:#0f172a;">
+                <span class="fw-bolder text-slate-800 border-start ps-3 ms-1" style="font-size: 1.05rem; letter-spacing: -0.4px;">Client Portal</span>
             </div>
             <div class="d-flex align-items-center">
                 <div class="d-none d-md-block text-end me-3">

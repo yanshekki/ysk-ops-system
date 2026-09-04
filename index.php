@@ -126,23 +126,13 @@ include 'includes/header.php';
 ?>
 
 <?php if ($show_login): ?>
-    <style>
-        body { 
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%) !important;
-            min-height: 100vh; display: flex !important; align-items: center !important; justify-content: center !important; padding: 20px;
-        }
-        .login-card { background: #ffffff; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); border: none; width: 100%; max-width: 440px; z-index: 10; }
-        .login-input-group .input-group-text { background-color: #f8fafc; color: #94a3b8; }
-        .login-form-control:focus { box-shadow: none; border-color: #6366f1; }
-        .btn-indigo { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: white; border: none; padding: 12px; font-weight: 600; transition: 0.2s; }
-        .btn-indigo:hover { background: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%); color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
-    </style>
-
-    <div class="login-card shadow-lg my-auto">
+    <div class="login-card my-auto">
         <div class="p-4 p-md-5">
             <div class="text-center mb-4">
-                <img src="https://ysk.hk/logo.svg" alt="YSK Logo" style="height: 48px; width: auto; margin-bottom: 16px;">
-                <h4 class="fw-bold" style="color: #1e293b;">YSK 業務運作系統</h4>
+                <div class="login-logo-mark">
+                    <img src="assets/favicon.svg" alt="YSK">
+                </div>
+                <h4 class="fw-bold mb-1" style="color: #0f172a; letter-spacing: -0.03em;">YSK 業務運作系統</h4>
                 <p class="text-muted small mb-0">內部核心管理與營運分析平台</p>
             </div>
             

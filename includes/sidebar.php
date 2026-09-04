@@ -7,30 +7,48 @@ $current_page = basename($_SERVER['PHP_SELF']);
        SaaS 企業級 Sidebar 專屬樣式
        ========================================= */
     #sidebar {
-        background-color: #0f172a;
+        background: linear-gradient(180deg, #0b1224 0%, #0f172a 40%, #0b1220 100%);
         width: 260px; min-height: 100vh; flex-shrink: 0; transition: all 0.3s ease;
-        box-shadow: 4px 0 15px rgba(0,0,0,0.05); z-index: 1040;
+        box-shadow: 8px 0 32px rgba(2, 6, 23, 0.28); z-index: 1040;
         font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        border-right: 1px solid rgba(148, 163, 184, 0.08);
     }
-    .sidebar-brand { color: #f8fafc; text-decoration: none; display: flex; align-items: center; padding: 1.5rem 1.5rem; margin-bottom: 0.5rem; }
-    .sidebar-heading { font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1.2px; padding: 1.2rem 1.5rem 0.5rem; }
-    .sidebar-nav { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 3px; padding: 0 0.75rem; }
-    .sidebar-link { display: flex; align-items: center; color: #94a3b8; text-decoration: none; padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.9rem; font-weight: 500; transition: all 0.2s ease; }
-    .sidebar-link i { font-size: 1.1rem; margin-right: 12px; color: #64748b; transition: all 0.2s ease; }
+    .sidebar-brand { color: #f8fafc; text-decoration: none; display: flex; align-items: center; gap: 12px; padding: 1.35rem 1.25rem 1.1rem; }
+    .sidebar-logo-wrap {
+        width: 40px; height: 40px; border-radius: 11px; background: #020617;
+        display: inline-flex; align-items: center; justify-content: center;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+        flex-shrink: 0;
+    }
+    .sidebar-logo-wrap img { height: 24px; width: auto; filter: none; }
+    .sidebar-brand-sub { display: block; font-size: 0.68rem; font-weight: 600; color: #64748b; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
+    .sidebar-heading { font-size: 0.68rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1.3px; padding: 1.15rem 1.35rem 0.4rem; }
+    .sidebar-nav { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; padding: 0 0.75rem; }
+    .sidebar-link { display: flex; align-items: center; color: #94a3b8; text-decoration: none; padding: 0.62rem 0.9rem; border-radius: 10px; font-size: 0.88rem; font-weight: 500; transition: all 0.18s ease; }
+    .sidebar-link i { font-size: 1.05rem; margin-right: 12px; color: #64748b; transition: all 0.18s ease; width: 1.15rem; text-align: center; }
     .sidebar-link:hover { color: #f8fafc; background-color: rgba(255, 255, 255, 0.05); }
-    .sidebar-link:hover i { color: #cbd5e1; }
-    .sidebar-link.active { color: #ffffff; background-color: #1e293b; box-shadow: inset 4px 0 0 #6366f1; }
-    .sidebar-link.active i { color: #818cf8; }
-    .sidebar-user-card { margin-top: auto; padding: 1.25rem 1.25rem; background-color: rgba(15, 23, 42, 0.95); border-top: 1px solid #1e293b; }
-    .sidebar-user-avatar { width: 38px; height: 38px; border-radius: 50%; background-color: #334155; color: #f8fafc; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 1rem; }
+    .sidebar-link:hover i { color: #c7d2fe; }
+    .sidebar-link.active {
+        color: #ffffff;
+        background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+        box-shadow: 0 10px 18px -10px rgba(79, 70, 229, 0.9);
+    }
+    .sidebar-link.active i { color: #ffffff; }
+    .sidebar-user-card { margin-top: auto; padding: 1.15rem 1.15rem 1.25rem; background: rgba(2, 6, 23, 0.55); border-top: 1px solid rgba(148,163,184,0.12); }
+    .sidebar-user-avatar { width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, #334155, #1e293b); color: #f8fafc; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; }
     @media (max-width: 767.98px) { #sidebar { position: fixed; left: -260px; } #sidebar.show { left: 0; } }
 </style>
 
 <div id="sidebar" class="d-flex flex-column pb-0 no-print">
     
     <a href="index.php" class="sidebar-brand">
-        <img src="https://ysk.hk/logo.svg" alt="YSK Logo" style="height: 32px; width: auto; max-width: 160px; margin-right: 12px; filter: brightness(0) invert(1);">
-        <span class="fs-5 fw-bolder tracking-tight">YSK Ops</span>
+        <span class="sidebar-logo-wrap">
+            <img src="assets/favicon.svg" alt="YSK">
+        </span>
+        <span>
+            <span class="fs-5 fw-bolder lh-1 d-block" style="letter-spacing:-0.03em;">YSK Ops</span>
+            <span class="sidebar-brand-sub">Internal OS</span>
+        </span>
     </a>
     
     <div class="overflow-y-auto flex-grow-1 sidebar-scroll" style="scrollbar-width: thin; scrollbar-color: #334155 transparent;">
@@ -183,10 +201,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </div>
         
         <div class="d-flex gap-2">
-            <a href="client_portal.php" target="_blank" class="btn btn-sm btn-outline-light w-100 d-flex align-items-center justify-content-center" style="font-size: 0.75rem; opacity: 0.75; border-color: rgba(255,255,255,0.2);" title="預覽對外客戶門戶">
+            <a href="client_portal.php" target="_blank" class="btn btn-sm btn-outline-light w-100 d-flex align-items-center justify-content-center" style="font-size: 0.75rem; border-color: rgba(255,255,255,0.18); color: #e2e8f0;" title="預覽對外客戶門戶">
                 <i class="bi bi-box-arrow-up-right me-1"></i> 客戶門戶
             </a>
-            <a href="logout.php" class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center px-3" style="font-size: 0.75rem; opacity: 0.85; border-color: rgba(220, 53, 69, 0.4);" title="登出系統">
+            <a href="logout.php" class="btn btn-sm d-flex align-items-center justify-content-center px-3" style="font-size: 0.75rem; background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.25);" title="登出系統">
                 <i class="bi bi-power"></i>
             </a>
         </div>

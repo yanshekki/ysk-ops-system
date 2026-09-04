@@ -133,10 +133,12 @@ include 'includes/header.php';
 <style>
     .catalog-chip { border: 1px solid #e2e8f0; background: #fff; border-radius: 999px; padding: 4px 12px; font-size: 0.8rem; cursor: pointer; }
     .catalog-chip:hover { border-color: #4f46e5; color: #4f46e5; background: #eef2ff; }
-    .quote-sticky { position: sticky; bottom: 0; background: #fff; border-top: 1px solid #e2e8f0; z-index: 20; }
-    #itemsBody { padding-bottom: 88px; }
     .item-row textarea { min-height: 180px; font-size: 0.85rem; line-height: 1.55; white-space: pre-wrap; }
     .catalog-scroll { max-height: 280px; overflow-y: auto; }
+    .quote-aside { position: sticky; top: 1rem; }
+    .quote-sum-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .quote-sum-row .sum-amt { white-space: nowrap; flex-shrink: 0; }
+    .quote-notes-label { min-height: 2.6em; display: flex; align-items: flex-end; }
 </style>
 
 <div class="d-flex align-items-stretch" style="min-height: 100vh; width: 100%;">
@@ -157,7 +159,17 @@ include 'includes/header.php';
                         <p class="text-muted mb-0">以 ysk.hk 公開方案為模板，金額以本單明細為準。</p>
                     </div>
                 </div>
-                <a href="quotes.php" class="btn btn-light border"><i class="bi bi-arrow-left me-1"></i> 返回列表</a>
+                <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                    <a href="quotes.php" class="btn btn-light border"><i class="bi bi-arrow-left me-1"></i> 返回列表</a>
+                    <?php if ($quote_id): ?>
+                    <a class="btn btn-outline-primary" href="quote_pdf.php?id=<?= (int)$quote_id ?>" target="_blank"><i class="bi bi-file-earmark-pdf me-1"></i> 開啟 PDF</a>
+                    <?php endif; ?>
+                    <?php if (!$readonly): ?>
+                    <button type="submit" form="quoteForm" name="save_quote" class="btn btn-light border fw-semibold">儲存草稿</button>
+                    <button type="submit" form="quoteForm" name="save_and_preview" class="btn btn-outline-primary fw-semibold">儲存並預覽 PDF</button>
+                    <button type="submit" form="quoteForm" name="save_and_send" class="btn btn-primary fw-bold" onclick="return confirm('發送後內容將鎖定，確定？');">儲存並標記已發送</button>
+                    <?php endif; ?>
+                </div>
             </div>
 
             <?php if ($success): ?><div class="alert alert-success border-0 shadow-sm"><i class="bi bi-check-circle me-2"></i><?= htmlspecialchars($success) ?></div><?php endif; ?>
@@ -224,14 +236,17 @@ include 'includes/header.php';
                                 </div>
                                 <div id="itemsBody">
                                     <?php foreach ($items as $idx => $it): ?>
-                                    <div class="item-row border rounded-3 p-3 mb-3 bg-light">
+                                    <div class="item-row border rounded-3 p-3 mb-3 bg-light position-relative">
+                                        <?php if (!$readonly): ?>
+                                        <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2" onclick="this.closest('.item-row').remove(); recalc();" title="刪除此行">刪除</button>
+                                        <?php endif; ?>
                                         <div class="row g-2">
-                                            <div class="col-md-6">
+                                            <div class="col-md-8 pe-md-5">
                                                 <input type="hidden" name="items[<?= $idx ?>][catalog_key]" value="<?= htmlspecialchars($it['catalog_key'] ?? '') ?>" class="js-catalog">
                                                 <label class="form-label small text-muted mb-1">項目名稱</label>
                                                 <input type="text" name="items[<?= $idx ?>][title]" class="form-control form-control-sm shadow-none js-title" value="<?= htmlspecialchars($it['title'] ?? '') ?>" <?= $readonly ? 'readonly' : '' ?> required>
                                             </div>
-                                            <div class="col-md-3">
+                                            <div class="col-md-4">
                                                 <label class="form-label small text-muted mb-1">計費週期</label>
                                                 <select name="items[<?= $idx ?>][billing_type]" class="form-select form-select-sm shadow-none js-billing" <?= $readonly ? 'disabled' : '' ?>>
                                                     <?php foreach ($billing_labels as $bk => $bl): ?>
@@ -239,11 +254,6 @@ include 'includes/header.php';
                                                     <?php endforeach; ?>
                                                 </select>
                                                 <?php if ($readonly): ?><input type="hidden" name="items[<?= $idx ?>][billing_type]" value="<?= htmlspecialchars($it['billing_type'] ?? 'one_time') ?>"><?php endif; ?>
-                                            </div>
-                                            <div class="col-md-3 text-end">
-                                                <?php if (!$readonly): ?>
-                                                <button type="button" class="btn btn-sm btn-outline-danger mt-4" onclick="this.closest('.item-row').remove(); recalc();">刪除</button>
-                                                <?php endif; ?>
                                             </div>
                                             <div class="col-12">
                                                 <label class="form-label small text-muted mb-1">說明（印上 PDF）</label>
@@ -276,11 +286,11 @@ include 'includes/header.php';
                             <div class="card-body p-4">
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label text-slate-500 fw-semibold small mb-1">內部備註（不印 PDF）</label>
+                                        <label class="form-label text-slate-500 fw-semibold small mb-1 quote-notes-label">內部備註（不印 PDF）</label>
                                         <textarea name="notes" class="form-control shadow-none" rows="3" <?= $readonly ? 'readonly' : '' ?>><?= htmlspecialchars($quote['notes'] ?? '') ?></textarea>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label text-slate-500 fw-semibold small mb-1">附加條款（印上 PDF，標準法律條款會自動附上）</label>
+                                        <label class="form-label text-slate-500 fw-semibold small mb-1 quote-notes-label">附加條款（印上 PDF，標準法律條款會自動附上）</label>
                                         <textarea name="terms" class="form-control shadow-none" rows="3" <?= $readonly ? 'readonly' : '' ?> placeholder="例如：本報價含三次修訂"><?= htmlspecialchars($quote['terms'] ?? '') ?></textarea>
                                     </div>
                                 </div>
@@ -289,6 +299,7 @@ include 'includes/header.php';
                     </div>
 
                     <div class="col-lg-4">
+                      <div class="quote-aside">
                         <?php if (!$readonly): ?>
                         <div class="card border-0 shadow-sm mb-4">
                             <div class="card-body p-4">
@@ -318,11 +329,11 @@ include 'includes/header.php';
                         <div class="card border-0 shadow-sm mb-4">
                             <div class="card-body p-4">
                                 <h6 class="fw-bold text-slate-800 mb-3">金額摘要</h6>
-                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">明細小計</span><span id="sumSubtotal" class="fw-semibold">HK$ 0</span></div>
-                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">折扣</span><span id="sumDiscount" class="fw-semibold">HK$ 0</span></div>
-                                <div class="d-flex justify-content-between mb-2"><span class="text-muted">稅項</span><span id="sumTax" class="fw-semibold">HK$ 0</span></div>
+                                <div class="quote-sum-row mb-2"><span class="text-muted">明細小計</span><span id="sumSubtotal" class="fw-semibold sum-amt">HK$ 0</span></div>
+                                <div class="quote-sum-row mb-2"><span class="text-muted">折扣</span><span id="sumDiscount" class="fw-semibold sum-amt">HK$ 0</span></div>
+                                <div class="quote-sum-row mb-2"><span class="text-muted">稅項</span><span id="sumTax" class="fw-semibold sum-amt">HK$ 0</span></div>
                                 <hr>
-                                <div class="d-flex justify-content-between mb-3"><span class="fw-bold">應付（首期）</span><span id="sumTotal" class="fw-bold text-primary fs-5">HK$ 0</span></div>
+                                <div class="quote-sum-row mb-3"><span class="fw-bold">應付（首期）</span><span id="sumTotal" class="fw-bold text-primary fs-5 sum-amt">HK$ 0</span></div>
                                 <div class="bg-light rounded-3 p-3">
                                     <div class="small text-muted mb-1">首年合約值（管線用，非收入）</div>
                                     <div id="sumYear" class="fw-bold text-slate-800">HK$ 0</div>
@@ -330,24 +341,10 @@ include 'includes/header.php';
                                 </div>
                             </div>
                         </div>
+                      </div>
                     </div>
                 </div>
-
-                <?php if (!$readonly): ?>
-                <div class="quote-sticky py-3 mt-2">
-                    <div class="d-flex flex-wrap gap-2 justify-content-end">
-                        <button type="submit" name="save_quote" class="btn btn-light border fw-semibold">儲存草稿</button>
-                        <button type="submit" name="save_and_preview" class="btn btn-outline-primary fw-semibold">儲存並預覽 PDF</button>
-                        <button type="submit" name="save_and_send" class="btn btn-primary fw-bold" onclick="return confirm('發送後內容將鎖定，確定？');">儲存並標記已發送</button>
-                    </div>
-                </div>
-                <?php elseif ($quote_id): ?>
-                <div class="d-flex gap-2 justify-content-end mb-4">
-                    <a class="btn btn-primary" href="quote_pdf.php?id=<?= (int)$quote_id ?>" target="_blank">開啟 PDF</a>
-                </div>
-                <?php endif; ?>
             </form>
-        </div>
 
 <script>
 const BILLING = <?= json_encode($billing_labels, JSON_UNESCAPED_UNICODE) ?>;
@@ -385,12 +382,19 @@ function nextIndex(){
 function addItemRow(data = {}){
     const i = nextIndex();
     const wrap = document.createElement('div');
-    wrap.className = 'item-row border rounded-3 p-3 mb-3 bg-light';
+    wrap.className = 'item-row border rounded-3 p-3 mb-3 bg-light position-relative';
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button';
+    btnDel.className = 'btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2';
+    btnDel.textContent = '刪除';
+    btnDel.title = '刪除此行';
+    btnDel.addEventListener('click', () => { wrap.remove(); recalc(); });
+    wrap.appendChild(btnDel);
     const row = document.createElement('div');
     row.className = 'row g-2';
 
     const colTitle = document.createElement('div');
-    colTitle.className = 'col-md-6';
+    colTitle.className = 'col-md-8 pe-md-5';
     const hid = document.createElement('input');
     hid.type = 'hidden'; hid.name = `items[${i}][catalog_key]`; hid.className = 'js-catalog';
     hid.value = data.key || data.catalog_key || '';
@@ -402,7 +406,7 @@ function addItemRow(data = {}){
     colTitle.append(hid, labTitle, inpTitle);
 
     const colBill = document.createElement('div');
-    colBill.className = 'col-md-3';
+    colBill.className = 'col-md-4';
     const labBill = document.createElement('label');
     labBill.className = 'form-label small text-muted mb-1'; labBill.textContent = '計費週期';
     const sel = document.createElement('select');
@@ -414,13 +418,6 @@ function addItemRow(data = {}){
         sel.appendChild(opt);
     });
     colBill.append(labBill, sel);
-
-    const colDel = document.createElement('div');
-    colDel.className = 'col-md-3 text-end';
-    const btnDel = document.createElement('button');
-    btnDel.type = 'button'; btnDel.className = 'btn btn-sm btn-outline-danger mt-4'; btnDel.textContent = '刪除';
-    btnDel.addEventListener('click', () => { wrap.remove(); recalc(); });
-    colDel.appendChild(btnDel);
 
     const colDesc = document.createElement('div');
     colDesc.className = 'col-12';
@@ -446,7 +443,7 @@ function addItemRow(data = {}){
     const line = document.createElement('div'); line.className = 'form-control form-control-sm bg-white fw-bold js-line'; line.textContent = 'HK$ 0.00';
     colLine.append(labLine, line);
 
-    row.append(colTitle, colBill, colDel, colDesc, colQty, colUnit, colPrice, colLine);
+    row.append(colTitle, colBill, colDesc, colQty, colUnit, colPrice, colLine);
     wrap.appendChild(row);
     document.getElementById('itemsBody').appendChild(wrap);
     wrap.querySelectorAll('input,select,textarea').forEach(el => el.addEventListener('input', recalc));

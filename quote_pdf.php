@@ -178,6 +178,7 @@ header('Content-Type: text/html; charset=utf-8');
 <head>
     <meta charset="UTF-8">
     <title>Quote_<?= htmlspecialchars($quote['quote_number']) ?>_YSK</title>
+    <?php include __DIR__ . '/includes/head_icons.php'; ?>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {

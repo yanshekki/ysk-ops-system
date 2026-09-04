@@ -2,10 +2,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap');
 
 :root {
-    --bs-primary: #4f46e5;       /* YSK 品牌深靛藍 */
+    --bs-primary: #4f46e5;
     --bs-primary-rgb: 79, 70, 229;
-    --bs-body-bg: #f8fafc;       /* 乾淨嘅淺灰藍底色 */
+    --bs-body-bg: #f1f5f9;
     --bs-body-font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+    --ysk-indigo: #4f46e5;
+    --ysk-indigo-dark: #3730a3;
+    --ysk-slate: #0f172a;
+    --ysk-radius: 14px;
+    --ysk-shadow: 0 10px 30px -18px rgba(15, 23, 42, 0.35);
+    --ysk-ring: 0 0 0 4px rgba(79, 70, 229, 0.16);
 }
 
 body {
@@ -15,131 +21,80 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* =========================================
-   1. 自訂高級文字與色彩 (解決 Bootstrap 冇嘅顏色)
-   ========================================= */
-.text-slate-400 { color: #94a3b8 !important; } /* 新增：更淡的次要文字 */
-.text-slate-500 { color: #64748b !important; } /* 新增：適合做小標題的灰 */
+.text-slate-400 { color: #94a3b8 !important; }
+.text-slate-500 { color: #64748b !important; }
 .text-slate-700 { color: #334155 !important; }
 .text-slate-800 { color: #1e293b !important; }
 .text-indigo { color: #4f46e5 !important; }
 .opacity-10 { opacity: 0.1 !important; }
 
-/* =========================================
-   2. 卡片 (Cards) - 懸浮感與柔和陰影
-   ========================================= */
 .card {
-    border: none !important;
-    border-radius: 16px !important;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+    border: 1px solid #e8eef5 !important;
+    border-radius: var(--ysk-radius) !important;
+    box-shadow: var(--ysk-shadow) !important;
     background-color: #ffffff;
 }
 
 .stat-card {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
 }
 .stat-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+    transform: translateY(-4px);
+    box-shadow: 0 18px 35px -20px rgba(79, 70, 229, 0.45) !important;
 }
 
-/* =========================================
-   3. 側邊欄 (Sidebar) - 深色質感
-   ========================================= */
-.sidebar {
-    background: #0f172a !important;
-    border-right: 1px solid #1e293b;
-}
-.sidebar .nav-link {
-    color: #94a3b8 !important;
-    border-radius: 8px;
-    margin: 4px 12px;
-    padding: 11px 16px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-}
-.sidebar .nav-link i { font-size: 1.1rem; }
-.sidebar .nav-link:hover {
-    color: #f8fafc !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-}
-.sidebar .nav-link.active {
-    color: #ffffff !important;
-    background: var(--bs-primary) !important;
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-}
-
-/* =========================================
-   4. 快速操作按鈕 (Quick Actions)
-   ========================================= */
 .border-dashed {
     border: 2px dashed #cbd5e1 !important;
     transition: all 0.2s ease;
 }
 .border-dashed:hover {
     border-color: var(--bs-primary) !important;
-    background-color: #f8fafc !important;
+    background-color: #eef2ff !important;
     transform: translateY(-2px);
 }
-.btn { border-radius: 8px !important; font-weight: 500; }
+
+.btn { border-radius: 10px !important; font-weight: 600; }
 .btn-primary {
     background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
     border: none !important;
-    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+    box-shadow: 0 8px 16px -8px rgba(79, 70, 229, 0.55);
 }
-.btn-primary:hover { box-shadow: 0 6px 8px -1px rgba(79, 70, 229, 0.3); }
+.btn-primary:hover { filter: brightness(1.05); box-shadow: 0 10px 18px -8px rgba(79, 70, 229, 0.65); }
 
-/* =========================================
-   5. 時間軸 (Operations Feed Timeline)
-   ========================================= */
-.timeline-container {
-    position: relative;
-    padding-left: 0.5rem;
-}
-/* 畫一條垂直嘅灰色時間線 */
+.timeline-container { position: relative; padding-left: 0.5rem; }
 .timeline-container::before {
     content: '';
     position: absolute;
-    top: 20px;
-    bottom: 20px;
-    left: 28px;
-    width: 2px;
-    background-color: #e2e8f0;
-    z-index: 0;
+    top: 20px; bottom: 20px; left: 28px;
+    width: 2px; background-color: #e2e8f0; z-index: 0;
 }
 .timeline-container .d-flex { position: relative; z-index: 1; }
-/* 圓形 Icon 底色 */
 .timeline-container .bg-light {
     background-color: #ffffff !important;
     border: 2px solid #e2e8f0;
     box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
-/* =========================================
-   6. 表格與柔和標籤 (Tables & Soft Badges)
-   ========================================= */
 .table { margin-bottom: 0; }
 .table > :not(caption) > * > * {
-    padding: 1rem 1.25rem !important;
+    padding: 0.95rem 1.15rem !important;
     border-bottom: 1px solid #f1f5f9 !important;
     vertical-align: middle;
 }
 .table th, .table thead.table-dark th {
-    background-color: #ffffff !important;
+    background-color: #f8fafc !important;
     color: #64748b !important;
     font-weight: 600 !important;
     text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-    border-bottom: 2px solid #e2e8f0 !important;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid #e2e8f0 !important;
 }
-.table-hover tbody tr { transition: background-color 0.2s ease; }
+.table-hover tbody tr { transition: background-color 0.15s ease; }
 .table-hover tbody tr:hover { background-color: #f8fafc !important; }
+.table td .btn-sm { border-radius: 8px !important; }
 
-/* 令 Badge 唔會咁刺眼，轉用底色淺、字色深嘅配搭 */
-.badge { padding: 0.5em 0.8em !important; border-radius: 6px !important; font-weight: 600 !important; letter-spacing: 0.025em; }
+.badge { padding: 0.45em 0.75em !important; border-radius: 999px !important; font-weight: 600 !important; letter-spacing: 0.02em; }
 .bg-success { background-color: #dcfce7 !important; color: #15803d !important; }
 .bg-warning { background-color: #fef9c3 !important; color: #a16207 !important; }
 .bg-danger { background-color: #fee2e2 !important; color: #b91c1c !important; }
@@ -147,37 +102,86 @@ body {
 .bg-info { background-color: #ecfeff !important; color: #0369a1 !important; }
 .bg-secondary { background-color: #f1f5f9 !important; color: #475569 !important; }
 
-/* =========================================
-   7. 搜尋框去邊框設計
-   ========================================= */
-.input-group-text { border-radius: 8px 0 0 8px !important; border-color: #cbd5e1; }
-.input-group .form-control { border-radius: 0 8px 8px 0 !important; border-color: #cbd5e1; }
-.input-group .form-control:focus { box-shadow: none; border-color: #cbd5e1; }
-
-/* =========================================
-   8. 流動端響應式 (RWD)
-   ========================================= */
-@media (max-width: 768px) {
-    .sidebar {
-        position: fixed !important;
-        z-index: 1050;
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
-    }
-    .sidebar.show { transform: translateX(0); }
-    .mobile-nav-toggle {
-        display: block !important;
-        position: fixed;
-        top: 15px;
-        left: 15px;
-        z-index: 1060;
-        background: var(--bs-primary) !important;
-        color: white !important;
-        border: none;
-        width: 42px;
-        height: 42px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-    }
+.form-control, .form-select {
+    border-color: #dbe3ee;
+    border-radius: 10px;
 }
-.mobile-nav-toggle { display: none; }
+.form-control:focus, .form-select:focus {
+    border-color: #818cf8 !important;
+    box-shadow: var(--ysk-ring) !important;
+}
+.input-group {
+    border-radius: 10px;
+    overflow: hidden;
+}
+.input-group-text {
+    border-color: #dbe3ee;
+    background: #f8fafc;
+}
+.input-group > .form-control,
+.input-group > .form-select {
+    border-radius: 0;
+    border-color: #dbe3ee;
+}
+.input-group:focus-within {
+    box-shadow: var(--ysk-ring);
+}
+
+h1.h3, h1.h4 { letter-spacing: -0.03em; color: #0f172a; }
+
+.alert { border-radius: 12px !important; }
+
+/* Login */
+body.ysk-login {
+    background:
+        radial-gradient(900px 480px at 8% -8%, rgba(99, 102, 241, 0.38), transparent 55%),
+        radial-gradient(700px 420px at 110% 108%, rgba(46, 160, 67, 0.18), transparent 50%),
+        linear-gradient(160deg, #0f172a 0%, #1e1b4b 52%, #0b1224 100%) !important;
+    min-height: 100vh !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 24px !important;
+}
+.login-card {
+    background: rgba(255,255,255,0.97);
+    border-radius: 22px;
+    box-shadow: 0 30px 80px -24px rgba(0,0,0,0.55);
+    border: 1px solid rgba(255,255,255,0.4);
+    width: 100%;
+    max-width: 440px;
+    z-index: 10;
+    backdrop-filter: blur(12px);
+}
+.login-logo-mark {
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    background: #0f172a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    box-shadow: 0 12px 24px -12px rgba(79, 70, 229, 0.8);
+}
+.login-logo-mark img { height: 36px; width: auto; }
+.login-input-group .input-group-text { background-color: #f8fafc; color: #94a3b8; }
+.btn-indigo {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    color: white; border: none; padding: 12px; font-weight: 600;
+}
+.btn-indigo:hover {
+    background: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%);
+    color: white;
+    box-shadow: 0 8px 18px -6px rgba(79, 70, 229, 0.55);
+}
+
+.mobile-nav-toggle {
+    background: var(--bs-primary) !important;
+    color: white !important;
+    border: none;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    flex-shrink: 0;
+}
