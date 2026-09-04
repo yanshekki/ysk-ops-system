@@ -21,12 +21,17 @@ define('SITE_NAME', 'YSK Ops System');
 define('SITE_URL', 'https://ops.ysk.hk');
 define('BASE_PATH', __DIR__);
 
-// 3. 資料庫連線憑證
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'ysk_ops');
-define('DB_USER', 'ysk_db_user'); 
-define('DB_PASS', 'your_secure_password'); 
-define('DB_CHAR', 'utf8mb4');
+// 3. 資料庫連線憑證（真實帳密只放 config.local.php，git pull 唔會蓋）
+if (is_file(__DIR__ . '/config.local.php')) {
+    require_once __DIR__ . '/config.local.php';
+}
+if (!defined('DB_HOST')) {
+    define('DB_HOST', 'localhost');
+    define('DB_NAME', 'ysk_ops');
+    define('DB_USER', 'ysk_db_user');
+    define('DB_PASS', 'your_secure_password');
+    define('DB_CHAR', 'utf8mb4');
+}
 
 // 4. 錯誤顯示由 includes/boot.php 依 APP_DEBUG 控制（production 預設關閉）
 

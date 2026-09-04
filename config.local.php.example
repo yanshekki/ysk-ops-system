@@ -1,0 +1,10 @@
+<?php
+/**
+ * 複製為 config.local.php 並填入真實資料庫帳密。
+ * 此檔唔好 commit。
+ */
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'ysk_ops');
+define('DB_USER', 'ysk_db_user');
+define('DB_PASS', 'your_secure_password');
+define('DB_CHAR', 'utf8mb4');

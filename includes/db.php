@@ -12,7 +12,11 @@ function get_db_connection() {
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
         } catch (PDOException $e) {
-            die("Database connection failed: " . $e->getMessage() . "<br>Please check config.php and run database.sql first.");
+            $hint = '請在網站根目錄建立 config.local.php（可複製 config.local.php.example）並填入真實資料庫帳密。git pull 唔會改呢個檔。';
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                die('Database connection failed: ' . htmlspecialchars($e->getMessage()) . '<br>' . $hint);
+            }
+            die('資料庫連線失敗。' . $hint);
         }
     }
     return $pdo;
