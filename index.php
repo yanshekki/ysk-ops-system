@@ -103,16 +103,15 @@ include 'includes/header.php';
                     <label class="form-label fw-semibold small mb-1" style="color: #475569;">使用者名稱</label>
                     <div class="input-group login-input-group">
                         <span class="input-group-text"><i class="bi bi-person"></i></span>
-                        <input type="text" name="username" class="form-control login-form-control shadow-none border-start-0 ps-0" value="admin" required>
+                        <input type="text" name="username" class="form-control login-form-control shadow-none border-start-0 ps-0" autocomplete="username" required autofocus>
                     </div>
                 </div>
                 <div class="mb-4">
                     <label class="form-label fw-semibold small mb-1" style="color: #475569;">安全密碼</label>
                     <div class="input-group login-input-group">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                        <input type="password" name="password" class="form-control login-form-control shadow-none border-start-0 ps-0" value="admin123" required>
+                        <input type="password" name="password" class="form-control login-form-control shadow-none border-start-0 ps-0" autocomplete="current-password" required>
                     </div>
-                    <div class="form-text mt-2" style="font-size: 0.75rem; color: #94a3b8;"><i class="bi bi-shield-lock me-1"></i>測試環境：admin / admin123</div>
                 </div>
                 <button type="submit" class="btn btn-indigo w-100 rounded-3 shadow-sm py-2">
                     安全登入 <i class="bi bi-arrow-right-short ms-1"></i>
