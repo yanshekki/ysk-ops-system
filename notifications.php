@@ -338,7 +338,7 @@ include 'includes/header.php';
 <script>
 function applyTemplate() {
     const templates = {
-        'progress': '【YSK 專案進度更新】\n您好，您委託的項目有最新進度更新！\n\n請登入客戶自助門戶查看詳細開發日誌及測試環境連結：\n👉 https://ysk.hk/portal\n\n如有任何問題，歡迎隨時聯絡我們。',
+        'progress': '【YSK 專案進度更新】\n您好，您委託的項目有最新進度更新！\n\n請登入客戶自助門戶查看詳細開發日誌：\n👉 https://ops.ysk.hk/client_portal.php\n\n如有任何問題，歡迎隨時聯絡我們。',
         'payment': '【YSK 付款提醒】\n您好，系統顯示您的賬單（發票）即將到期或已逾期。\n\n為免影響服務進度，請盡快付款，請忽略此訊息。謝謝您的合作！',
         'meeting': '【YSK 會議提醒】\n您好，這是一則溫馨的會議提醒。\n我們即將在稍後進行線上/實體會議，請您準時出席。\n\n如需更改時間，請盡早通知負責的專案經理。謝謝！',
         'quote_sent': '【YSK 報價單】\n您好，我們已為您準備書面報價。\n\n請登入客戶自助門戶查閱及回覆：\n👉 https://ops.ysk.hk/client_portal.php\n\n如有任何問題，歡迎 WhatsApp +852 6160 4242。',

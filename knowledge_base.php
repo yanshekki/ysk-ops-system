@@ -3,6 +3,7 @@ require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_login();
+require_any_role(['pm', 'developer', 'finance', 'viewer']);
 
 $success = $error = '';
 $current_user_id = $_SESSION['user_id'];

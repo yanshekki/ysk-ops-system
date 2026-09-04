@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
+require_once 'includes/billing_helpers.php';
 require_login();
 require_any_role(['pm', 'developer', 'finance']);
 
@@ -96,6 +97,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $approved_by = $new_status ? $current_user_id : null;
             
             db_update('timesheets', ['is_approved' => $new_status, 'approved_by' => $approved_by], 'id = ?', [$ts_id]);
+            $row = db_fetch_one("SELECT task_id FROM timesheets WHERE id = ?", [$ts_id]);
+            if (!empty($row['task_id'])) {
+                sync_task_logged_hours((int)$row['task_id']);
+            }
             $success = $new_status ? '工時已審核通過！' : '工時已退回至待審核狀態！';
         } else {
             $error = '權限不足！您沒有審核工時的權限。';

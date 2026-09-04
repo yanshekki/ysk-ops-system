@@ -42,7 +42,7 @@ if ($year_filter) {
 $global_sql = "
     SELECT c.id, c.company_name,
            (SELECT COALESCE(SUM(total_amount),0) FROM invoices WHERE client_id = c.id AND status = 'paid' $year_clause) as total_revenue,
-           (SELECT COALESCE(SUM(total_amount),0) FROM invoices WHERE client_id = c.id AND status IN ('draft', 'sent', 'overdue') $year_clause) as pending_revenue
+           (SELECT COALESCE(SUM(total_amount),0) FROM invoices WHERE client_id = c.id AND status IN ('sent', 'overdue') $year_clause) as pending_revenue
     FROM clients c 
     WHERE c.status = 'active' $search_clause
 ";
@@ -71,7 +71,7 @@ $sql = "
     SELECT c.*,
            (SELECT COUNT(*) FROM projects WHERE client_id = c.id) as project_count,
            (SELECT COALESCE(SUM(total_amount),0) FROM invoices WHERE client_id = c.id AND status = 'paid' $year_clause) as total_revenue,
-           (SELECT COALESCE(SUM(total_amount),0) FROM invoices WHERE client_id = c.id AND status IN ('draft', 'sent', 'overdue') $year_clause) as pending_revenue
+           (SELECT COALESCE(SUM(total_amount),0) FROM invoices WHERE client_id = c.id AND status IN ('sent', 'overdue') $year_clause) as pending_revenue
     FROM clients c 
     WHERE c.status = 'active' $search_clause
     ORDER BY total_revenue DESC, c.id ASC

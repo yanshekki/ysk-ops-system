@@ -4,10 +4,17 @@
  * 職責：只做純常數定義、環境設定，並自動橋接全域工具箱
  */
 
+if (!defined('APP_DEBUG')) {
+    define('APP_DEBUG', false);
+}
+require_once __DIR__ . '/includes/boot.php';
+
 // 1. 啟動全域 Session
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+require_once __DIR__ . '/includes/csrf.php';
+csrf_verify_request();
 
 // 2. 系統基礎設定常數
 define('SITE_NAME', 'YSK Ops System');
@@ -21,10 +28,7 @@ define('DB_USER', 'ysk_db_user');
 define('DB_PASS', 'your_secure_password'); 
 define('DB_CHAR', 'utf8mb4');
 
-// 4. 開發環境錯誤調試設定
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// 4. 錯誤顯示由 includes/boot.php 依 APP_DEBUG 控制（production 預設關閉）
 
 // 5. 設定預設時區
 date_default_timezone_set('Asia/Hong_Kong');

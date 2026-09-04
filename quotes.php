@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'accepted_at' => date('Y-m-d H:i:s'),
                 ], 'id = ?', [$quote_id]);
                 quote_promote_lead((int)$q['client_id']);
-                $success = '客戶已接受報價 ' . $q['quote_number'] . '。請轉換為發票。';
+                $success = '客戶已接受報價 ' . $q['quote_number'] . '。請立即轉換為發票，否則客戶 Portal 仍未有應付帳單。';
             } elseif (isset($_POST['decline_quote'])) {
                 $q = db_fetch_one("SELECT * FROM quotes WHERE id = ?", [$quote_id]);
                 if (!$q || !quote_can('decline', $q)) {
@@ -77,8 +77,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             } elseif (isset($_POST['convert_quote'])) {
                 $create_project = isset($_POST['create_project']);
-                $result = quote_convert($quote_id, $user_id, $create_project);
-                $success = '已轉換為發票 ' . $result['invoice_number'] . '（草稿）。第一期已入帳，週期下次扣費不會重複第一期。';
+                $send_invoice = isset($_POST['send_invoice']);
+                $pm_id = !empty($_POST['assigned_pm_id']) ? (int)$_POST['assigned_pm_id'] : null;
+                $result = quote_convert($quote_id, $user_id, $create_project, $pm_id, $send_invoice);
+                $sent_label = $send_invoice ? '已發送給客戶' : '草稿（請記得發送，否則 Portal 睇唔到）';
+                $success = '已轉換為發票 ' . $result['invoice_number'] . '（' . $sent_label . '）。第一期已入帳，週期下次扣費不會重複第一期。';
                 $_SESSION['flash_success'] = $success;
                 header('Location: invoices.php?search=' . urlencode($result['invoice_number']));
                 exit;
@@ -145,6 +148,7 @@ if ($quotes) {
 }
 
 $status_badges = quote_status_map();
+$pms = db_fetch_all("SELECT id, full_name FROM users WHERE role IN ('admin','pm') AND is_active=1 ORDER BY full_name");
 $page_title = '報價單 Quotes';
 include 'includes/header.php';
 ?>
@@ -374,10 +378,21 @@ include 'includes/header.php';
                                                         </ul>
                                                     </div>
                                                     <?php endif; ?>
-                                                    <div class="form-check">
+                                                    <div class="form-check mb-2">
                                                         <input class="form-check-input" type="checkbox" name="create_project" id="cp<?= (int)$q['id'] ?>" checked>
                                                         <label class="form-check-label" for="cp<?= (int)$q['id'] ?>">同時建立專案（預算 = 首年合約值 HK$ <?= number_format($year_one, 0) ?>）</label>
                                                     </div>
+                                                    <div class="form-check mb-3">
+                                                        <input class="form-check-input" type="checkbox" name="send_invoice" id="si<?= (int)$q['id'] ?>" checked>
+                                                        <label class="form-check-label" for="si<?= (int)$q['id'] ?>">轉換後直接將發票標為「已發送」（客戶 Portal 即時可見）</label>
+                                                    </div>
+                                                    <label class="form-label small text-muted">專案負責人 PM（可空）</label>
+                                                    <select name="assigned_pm_id" class="form-select shadow-none">
+                                                        <option value="">未指派</option>
+                                                        <?php foreach ($pms as $pm): ?>
+                                                            <option value="<?= (int)$pm['id'] ?>"><?= htmlspecialchars($pm['full_name']) ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
                                                 </div>
                                                 <div class="modal-footer border-0 pb-4 px-4">
                                                     <button type="button" class="btn btn-light border" data-bs-dismiss="modal">取消</button>

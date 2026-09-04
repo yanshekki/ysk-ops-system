@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
+require_once 'includes/billing_helpers.php';
 
 $login_error = '';
 $show_login = true;
@@ -23,6 +24,25 @@ if (is_logged_in()) {
     $show_login = false;
     $page_title = "控制台儀表板"; // 登入後的 Title
     $user = current_user();
+    expire_overdue_invoices();
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_due_recurring']) && has_any_role(['finance'])) {
+        $due = due_recurring_invoices();
+        $made = [];
+        foreach ($due as $r) {
+            try {
+                $out = generate_recurring_invoice($r, (int)$_SESSION['user_id']);
+                $made[] = $out['invoice_number'];
+            } catch (Throwable $e) {
+                $_SESSION['flash_error'] = $e->getMessage();
+            }
+        }
+        if ($made) {
+            $_SESSION['flash_success'] = '已生成週期發票：' . implode(', ', $made);
+        }
+        header('Location: index.php');
+        exit;
+    }
     
     // Global search
     $global_search = trim($_GET['global_search'] ?? '');
@@ -67,7 +87,7 @@ if (is_logged_in()) {
         'open_quotes' => 0,
         'open_quotes_count' => 0,
         'pending_revenue' => db_fetch_one("SELECT SUM(total_amount) as s FROM invoices WHERE status IN ('sent', 'overdue')")['s'] ?? 0,
-        'invoices_pending_count' => db_fetch_one("SELECT COUNT(*) as c FROM invoices WHERE status IN ('draft', 'sent', 'overdue')")['c'] ?? 0,
+        'invoices_pending_count' => db_fetch_one("SELECT COUNT(*) as c FROM invoices WHERE status IN ('sent', 'overdue')")['c'] ?? 0,
         'total_revenue' => db_fetch_one("SELECT SUM(total_amount) as s FROM invoices WHERE status = 'paid'")['s'] ?? 0,
     ];
     try {
@@ -78,6 +98,20 @@ if (is_logged_in()) {
         // quotes 表尚未建立
     }
     
+    $due_recurring = has_any_role(['finance', 'pm']) ? due_recurring_invoices() : [];
+    $expiring_contracts = [];
+    try {
+        $expiring_contracts = db_fetch_all(
+            "SELECT r.*, c.company_name FROM recurring_invoices r
+             LEFT JOIN clients c ON c.id = r.client_id
+             WHERE r.status = 'active' AND r.contract_end_date IS NOT NULL
+               AND r.contract_end_date <= DATE_ADD(CURDATE(), INTERVAL 45 DAY)
+             ORDER BY r.contract_end_date ASC LIMIT 8"
+        ) ?: [];
+    } catch (Throwable $e) {
+        $expiring_contracts = [];
+    }
+
     $recent_projects = db_fetch_all("
         SELECT p.*, c.company_name FROM projects p JOIN clients c ON p.client_id = c.id ORDER BY p.updated_at DESC LIMIT 5
     ");
@@ -117,6 +151,7 @@ include 'includes/header.php';
             <?php endif; ?>
             
             <form method="POST">
+                <?= csrf_field() ?>
                 <input type="hidden" name="login" value="1">
                 <div class="mb-3">
                     <label class="form-label fw-semibold small mb-1" style="color: #475569;">使用者名稱</label>
@@ -246,6 +281,39 @@ include 'includes/header.php';
                 </div>
                 <?php endif; ?>
                 
+                <?php if (!empty($_SESSION['flash_success'])): ?>
+                    <div class="alert alert-success border-0 shadow-sm"><?= htmlspecialchars($_SESSION['flash_success']) ?></div>
+                    <?php unset($_SESSION['flash_success']); ?>
+                <?php endif; ?>
+                <?php if (!empty($_SESSION['flash_error'])): ?>
+                    <div class="alert alert-danger border-0 shadow-sm"><?= htmlspecialchars($_SESSION['flash_error']) ?></div>
+                    <?php unset($_SESSION['flash_error']); ?>
+                <?php endif; ?>
+
+                <?php if (!empty($due_recurring) && has_any_role(['finance'])): ?>
+                <div class="alert alert-warning border-0 shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                    <div>
+                        <strong>有 <?= count($due_recurring) ?> 條週期規則已到期未出單</strong>
+                        <div class="small">外判／SaaS／年費唔會自動出票，請生成後再發送給客戶。</div>
+                    </div>
+                    <form method="POST" class="m-0">
+                        <?= csrf_field() ?>
+                        <button type="submit" name="generate_due_recurring" class="btn btn-warning fw-bold" onclick="return confirm('將為所有到期週期規則各開一張草稿發票？');">生成本期全部</button>
+                    </form>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($expiring_contracts)): ?>
+                <div class="alert alert-light border shadow-sm">
+                    <strong>合約即將到期（45 日內）</strong>
+                    <ul class="mb-0 mt-2 small">
+                        <?php foreach ($expiring_contracts as $ec): ?>
+                            <li><?= htmlspecialchars($ec['company_name'] ?? '') ?> · <?= htmlspecialchars($ec['title']) ?> · <?= htmlspecialchars($ec['contract_end_date']) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <?php endif; ?>
+
                 <div class="row g-3 mb-4">
                     <div class="col-sm-6 col-xl-3">
                         <div class="card stat-card shadow-sm h-100 border-0 border-left-thick" style="border-left-color: #6366f1 !important;">

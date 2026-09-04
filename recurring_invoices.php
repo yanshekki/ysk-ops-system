@@ -3,6 +3,7 @@ require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_once 'includes/numbering.php';
+require_once 'includes/billing_helpers.php';
 require_login();
 
 // 防護：PM, Finance, Viewer 可進入 (Developer 無需接觸財務)
@@ -31,66 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['generate_invoice'])) {
             $recurring_id = (int)$_POST['recurring_id'];
             $recurring = db_fetch_one("SELECT * FROM recurring_invoices WHERE id = ?", [$recurring_id]);
-            
-            if ($recurring && $recurring['status'] == 'active') {
-                $invoice_number = next_invoice_number();
-                
-                $invoice_data = [
-                    'invoice_number' => $invoice_number,
-                    'client_id' => $recurring['client_id'],
-                    'project_id' => $recurring['project_id'],
-                    'quote_id' => $recurring['quote_id'] ?? null,
-                    'source' => 'recurring',
-                    'issue_date' => date('Y-m-d'),
-                    'due_date' => date('Y-m-d', strtotime('+30 days')),
-                    'subtotal' => $recurring['amount'],
-                    'tax_percent' => 0,
-                    'total_amount' => $recurring['amount'],
-                    'status' => 'draft',
-                    'notes' => $recurring['notes'] ?? '',
-                    'created_by' => $_SESSION['user_id']
-                ];
-                
-                try {
-                    $inv_id = (int)db_insert('invoices', $invoice_data);
-                } catch (PDOException $e) {
-                    $invoice_data['invoice_number'] = next_invoice_number();
-                    $invoice_number = $invoice_data['invoice_number'];
-                    $inv_id = (int)db_insert('invoices', $invoice_data);
-                }
-                try {
-                    db_insert('invoice_items', [
-                        'invoice_id' => $inv_id,
-                        'sort_order' => 0,
-                        'title' => $recurring['title'],
-                        'description' => $recurring['notes'] ?? '',
-                        'qty' => 1,
-                        'unit' => '期',
-                        'unit_price' => $recurring['amount'],
-                        'line_total' => $recurring['amount'],
-                    ]);
-                } catch (Throwable $e) {
-                    // invoice_items 尚未 migration 時略過
-                }
-                
-                $next_date = $recurring['next_invoice_date'];
-                switch ($recurring['frequency']) {
-                    case 'monthly':
-                        $next_date = date('Y-m-d', strtotime($next_date . ' +1 month'));
-                        break;
-                    case 'quarterly':
-                        $next_date = date('Y-m-d', strtotime($next_date . ' +3 months'));
-                        break;
-                    case 'yearly':
-                        $next_date = date('Y-m-d', strtotime($next_date . ' +1 year'));
-                        break;
-                    case 'every_30_days':
-                        $next_date = date('Y-m-d', strtotime($next_date . ' +30 days'));
-                        break;
-                }
-                
-                db_update('recurring_invoices', ['next_invoice_date' => $next_date], 'id = ?', [$recurring_id]);
-                $success = "已為「{$recurring['title']}」成功生成草稿發票 #{$invoice_number}！";
+            try {
+                $out = generate_recurring_invoice($recurring ?: [], (int)$_SESSION['user_id']);
+                $success = "已為「{$recurring['title']}」成功生成草稿發票 #{$out['invoice_number']}！";
+            } catch (Throwable $e) {
+                $error = $e->getMessage();
             }
         }
         
@@ -104,11 +50,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'frequency' => $_POST['frequency'],
                 'start_date' => $_POST['start_date'],
                 'next_invoice_date' => $_POST['start_date'],
+                'contract_end_date' => !empty($_POST['contract_end_date']) ? $_POST['contract_end_date'] : date('Y-m-d', strtotime($_POST['start_date'] . ' +1 year')),
                 'status' => 'active',
                 'notes' => trim($_POST['notes'] ?? ''),
                 'created_by' => $_SESSION['user_id']
             ];
-            db_insert('recurring_invoices', $data);
+            try {
+                db_insert('recurring_invoices', $data);
+            } catch (PDOException $e) {
+                unset($data['contract_end_date']);
+                db_insert('recurring_invoices', $data);
+            }
             $success = '周期性發票規則已成功設置！';
         }
 
@@ -571,6 +523,10 @@ $status_options = [
                                 <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-calendar-event"></i></span>
                                 <input type="date" name="start_date" class="form-control border-start-0 ps-0 shadow-none" value="<?= date('Y-m-d') ?>" required>
                             </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-slate-500 fw-semibold small mb-1">合約到期日（外判預設一年）</label>
+                            <input type="date" name="contract_end_date" class="form-control shadow-none" value="<?= date('Y-m-d', strtotime('+1 year')) ?>">
                         </div>
                         
                         <div class="col-12">

@@ -379,8 +379,8 @@ function quote_promote_lead(int $client_id): void {
     db_query("UPDATE clients SET status = 'active' WHERE id = ? AND status = 'lead'", [$client_id]);
 }
 
-function quote_convert(int $quote_id, int $user_id, bool $create_project = true): array {
-    return db_transaction(function () use ($quote_id, $user_id, $create_project) {
+function quote_convert(int $quote_id, int $user_id, bool $create_project = true, ?int $assigned_pm_id = null, bool $send_invoice = false): array {
+    return db_transaction(function () use ($quote_id, $user_id, $create_project, $assigned_pm_id, $send_invoice) {
         $quote = db_fetch_one("SELECT * FROM quotes WHERE id = ? FOR UPDATE", [$quote_id]);
         if (!$quote) {
             throw new RuntimeException('找不到報價單。');
@@ -430,7 +430,7 @@ function quote_convert(int $quote_id, int $user_id, bool $create_project = true)
                 'end_date' => null,
                 'budget' => quote_year_one_value($items),
                 'progress_percent' => 0,
-                'assigned_pm_id' => $user_id,
+                'assigned_pm_id' => $assigned_pm_id ?: null,
                 'created_by' => $user_id,
                 'quote_id' => $quote_id,
             ]);
@@ -451,7 +451,7 @@ function quote_convert(int $quote_id, int $user_id, bool $create_project = true)
             'subtotal' => $invoice_subtotal,
             'tax_percent' => $tax_percent,
             'total_amount' => $invoice_total,
-            'status' => 'draft',
+            'status' => $send_invoice ? 'sent' : 'draft',
             'notes' => '由報價單 ' . $quote['quote_number'] . ' 轉換。週期項目的第一期已包含在本發票；其後由週期發票產生，避免重複收費。'
                 . ($quote['notes'] ? "\n\n" . $quote['notes'] : ''),
             'created_by' => $user_id,
@@ -496,7 +496,7 @@ function quote_convert(int $quote_id, int $user_id, bool $create_project = true)
             if (!$freq) {
                 continue;
             }
-            $rid = (int)db_insert('recurring_invoices', [
+            $recurring_row = [
                 'client_id' => (int)$quote['client_id'],
                 'project_id' => $project_id,
                 'quote_id' => $quote_id,
@@ -505,10 +505,17 @@ function quote_convert(int $quote_id, int $user_id, bool $create_project = true)
                 'frequency' => $freq,
                 'start_date' => $today,
                 'next_invoice_date' => quote_next_period_date($today, $item['billing_type']),
+                'contract_end_date' => date('Y-m-d', strtotime('+1 year')),
                 'status' => 'active',
                 'notes' => '由報價單 ' . $quote['quote_number'] . ' 轉換。第一期已在發票 ' . $invoice_number . ' 收取。',
                 'created_by' => $user_id,
-            ]);
+            ];
+            try {
+                $rid = (int)db_insert('recurring_invoices', $recurring_row);
+            } catch (PDOException $e) {
+                unset($recurring_row['contract_end_date']);
+                $rid = (int)db_insert('recurring_invoices', $recurring_row);
+            }
             if ($first_recurring_id === null) {
                 $first_recurring_id = $rid;
             }

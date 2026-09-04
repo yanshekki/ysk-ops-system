@@ -78,8 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if (isset($_POST['delete_client'])) {
-            db_delete('clients', 'id = ?', [$_POST['client_id']]);
-            $success = '客戶已徹底刪除！';
+            $cid = (int)$_POST['client_id'];
+            db_update('clients', ['status' => 'inactive'], 'id = ?', [$cid]);
+            $success = '客戶已設為非活躍（歷史發票與報價保留，以符合帳務保存要求）。';
         }
     }
 }
@@ -247,7 +248,7 @@ $status_labels = [
                                         <?php if (has_any_role(['admin', 'pm'])): ?>
                                             <button class="btn btn-sm btn-light border text-primary me-1" data-bs-toggle="modal" data-bs-target="#editClientModal<?= $c['id'] ?>" title="編輯"><i class="bi bi-pencil-square"></i></button>
                                             
-                                            <form method="POST" class="d-inline" onsubmit="return confirm('⚠️ 嚴重警告！\n\n刪除客戶將會連帶永久刪除該客戶名下的：\n- 所有項目 (Projects)\n- 所有任務 (Tasks)\n- 所有發票 (Invoices)\n\n建議在編輯中將狀態改為「非活躍」。\n\n確定要強制刪除嗎？')">
+                                            <form method="POST" class="d-inline" onsubmit="return confirm('將此客戶設為非活躍？\n發票、報價與專案紀錄會保留，不會刪除帳務資料。')">
                                                 <input type="hidden" name="client_id" value="<?= $c['id'] ?>">
                                                 <button type="submit" name="delete_client" class="btn btn-sm btn-light border text-danger" title="刪除"><i class="bi bi-trash3"></i></button>
                                             </form>

@@ -164,6 +164,7 @@ include 'includes/header.php';
             <?php if ($locked): ?><div class="alert alert-warning border-0 shadow-sm">此報價已發送或完結，內容已鎖定。如需改價請使用「修訂」或「複製」。</div><?php endif; ?>
 
             <form method="POST" id="quoteForm">
+                <?= csrf_field() ?>
                 <input type="hidden" name="quote_id" value="<?= (int)$quote_id ?>">
 
                 <div class="row g-4">

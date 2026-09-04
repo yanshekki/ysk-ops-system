@@ -57,15 +57,17 @@ $where_sql = implode(" AND ", $where_clauses);
 // ==============================================
 $agg_sql = "SELECT 
                 COALESCE(SUM(p.budget), 0) as overall_budget,
-                COALESCE(SUM((SELECT COALESCE(SUM(hours * $hourly_rate_safe), 0) FROM timesheets WHERE project_id = p.id)), 0) as overall_cost,
+                COALESCE(SUM((SELECT COALESCE(SUM(hours * $hourly_rate_safe), 0) FROM timesheets WHERE project_id = p.id AND is_approved = 1)), 0) as overall_cost,
                 COUNT(p.id) as total_projects
             FROM projects p 
             LEFT JOIN clients c ON p.client_id = c.id 
             WHERE $where_sql";
 $agg_data = db_fetch_one($agg_sql, $params);
 
-$total_revenue = $agg_data['overall_budget'];
-$total_cost = $agg_data['overall_cost'];
+$paid_row = db_fetch_one("SELECT COALESCE(SUM(total_amount),0) AS s FROM invoices WHERE status = 'paid'");
+$contract_value = (float)($agg_data['overall_budget'] ?? 0);
+$total_revenue = (float)($paid_row['s'] ?? 0);
+$total_cost = (float)($agg_data['overall_cost'] ?? 0);
 $total_profit = $total_revenue - $total_cost;
 $avg_profit_rate = $total_revenue > 0 ? round(($total_profit / $total_revenue) * 100, 1) : 0;
 
@@ -75,8 +77,9 @@ $total_pages = ceil(($agg_data['total_projects'] ?? 0) / $per_page);
 // 獲取當前分頁的項目列表
 // ==============================================
 $sql = "SELECT p.*, c.company_name,
-               (SELECT COALESCE(SUM(hours), 0) FROM timesheets WHERE project_id = p.id) as total_hours,
-               (SELECT COALESCE(SUM(hours * $hourly_rate_safe), 0) FROM timesheets WHERE project_id = p.id) as estimated_cost
+               (SELECT COALESCE(SUM(hours), 0) FROM timesheets WHERE project_id = p.id AND is_approved = 1) as total_hours,
+               (SELECT COALESCE(SUM(hours * $hourly_rate_safe), 0) FROM timesheets WHERE project_id = p.id AND is_approved = 1) as estimated_cost,
+               (SELECT COALESCE(SUM(total_amount), 0) FROM invoices WHERE project_id = p.id AND status = 'paid') as paid_amount
         FROM projects p 
         LEFT JOIN clients c ON p.client_id = c.id 
         WHERE $where_sql
@@ -123,7 +126,7 @@ $service_options = [
                             <i class="bi bi-graph-up-arrow me-2 text-primary"></i> 項目收益分析 
                         </h2>
                         <p class="text-muted mb-0 d-none d-md-block">
-                            嚴格監控專案預算與實際工時投入成本，確保公司營運利潤
+                            收入以已付發票為準；合約預算只作對照。工時成本只計已審核紀錄。
                         </p>
                     </div>
                 </div>
@@ -176,12 +179,13 @@ $service_options = [
                     <div class="card stat-card h-100 border-0 shadow-sm" style="border-left: 4px solid #6366f1 !important;">
                         <div class="card-body p-4">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="text-slate-500 fw-semibold mb-0" style="font-size: 0.85rem;">總合約預算收益</h6>
+                                <h6 class="text-slate-500 fw-semibold mb-0" style="font-size: 0.85rem;">已收發票收入</h6>
                                 <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
                                     <i class="bi bi-cash-stack fs-5"></i>
                                 </div>
                             </div>
                             <h3 class="fw-bold text-slate-800 mb-1">HK$ <?= number_format($total_revenue, 0) ?></h3>
+                            <div class="small text-muted">合約值 HK$ <?= number_format($contract_value, 0) ?></div>
                         </div>
                     </div>
                 </div>
@@ -189,7 +193,7 @@ $service_options = [
                     <div class="card stat-card h-100 border-0 shadow-sm" style="border-left: 4px solid #ef4444 !important;">
                         <div class="card-body p-4">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="text-slate-500 fw-semibold mb-0" style="font-size: 0.85rem;">估算工時總成本</h6>
+                                <h6 class="text-slate-500 fw-semibold mb-0" style="font-size: 0.85rem;">已審核工時成本</h6>
                                 <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
                                     <i class="bi bi-stopwatch fs-5"></i>
                                 </div>
@@ -236,7 +240,8 @@ $service_options = [
                                     <th class="py-3">所屬客戶</th>
                                     <th class="py-3">當前狀態</th>
                                     <th class="text-end py-3">合約預算 (HK$)</th>
-                                    <th class="text-center py-3">實際投入工時</th>
+                                    <th class="text-end py-3">已收發票 (HK$)</th>
+                                    <th class="text-center py-3">已審核工時</th>
                                     <th class="text-end py-3">估計成本 (HK$)</th>
                                     <th class="text-end py-3">估算利潤 (HK$)</th>
                                     <th class="text-center pe-4 py-3">利潤率</th>
@@ -244,8 +249,8 @@ $service_options = [
                             </thead>
                             <tbody class="border-top-0">
                                 <?php foreach ($projects as $p): 
-                                    $profit = $p['budget'] - $p['estimated_cost'];
-                                    $profit_rate = $p['budget'] > 0 ? round(($profit / $p['budget']) * 100, 1) : 0;
+                                    $profit = ($p['paid_amount'] ?? 0) - $p['estimated_cost'];
+                                    $profit_rate = ($p['paid_amount'] ?? 0) > 0 ? round(($profit / $p['paid_amount']) * 100, 1) : 0;
                                     
                                     // 利潤狀態視覺化
                                     if ($profit_rate >= 40) {
@@ -284,6 +289,9 @@ $service_options = [
                                     </td>
                                     <td class="text-end fw-bold text-slate-700">
                                         <?= number_format($p['budget'] ?? 0, 0) ?>
+                                    </td>
+                                    <td class="text-end fw-bold text-success">
+                                        <?= number_format($p['paid_amount'] ?? 0, 0) ?>
                                     </td>
                                     <td class="text-center">
                                         <div class="fw-bold text-indigo fs-6"><?= number_format($p['total_hours'], 1) ?> <span class="text-muted small fw-normal">小時</span></div>

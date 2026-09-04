@@ -3,8 +3,14 @@ require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_login();
+require_any_role(['pm', 'finance']);
 
 $type = $_GET['type'] ?? 'invoices';
+$allowed = ['invoices', 'clients', 'quotes'];
+if (!in_array($type, $allowed, true)) {
+    http_response_code(400);
+    die('不支援的匯出類型');
+}
 
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename="' . $type . '_export_' . date('YmdHis') . '.csv"');

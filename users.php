@@ -3,7 +3,7 @@ require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_login();
-require_any_role([]);
+require_any_role(['admin']);
 
 // 權限檢查：只有 admin 可以進入此頁面
 if (!has_role('admin')) {

@@ -48,11 +48,11 @@
 2. 建立 MySQL 資料庫，並匯入 `database.sql` (內含過百條真實模擬測試數據)。
 3. **現有 production 資料庫**請跑 additive migration，**不要**重跑會 DROP 表的 `database.sql`：
    `mysql ... ki_ops < migrations/2026-09-04-quotes.sql`
+   `mysql ... ki_ops < migrations/2026-09-04-hardening.sql`
 4. 修改 `config.php` 中的資料庫連線設定。
 5. 上傳至任何支援 PHP 的 Web Hosting 或伺服器。
 6. 訪問 `index.php` 即可登入。
-   - *管理員測試帳號*：`admin` / `password`
-   - *客戶 Portal 測試帳號*：`apex0` / `password` (請訪問 `client_portal.php`)
+   - 首次安裝請即刻更改管理員密碼。Sample SQL 的示範帳密僅供本機，**不可用於 production**。
 
 ---
 

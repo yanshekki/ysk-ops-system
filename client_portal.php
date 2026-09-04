@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/quote_helpers.php';
+require_once 'includes/billing_helpers.php';
 
 // 啟動 Session (確保沒有重複啟動)
 if (session_status() === PHP_SESSION_NONE) {
@@ -26,6 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['client_login'])) {
         $client = db_fetch_one("SELECT * FROM clients WHERE username = ? AND status = 'active'", [$username]);
         
         if ($client && password_verify($password, $client['password_hash'])) {
+            session_regenerate_id(true);
+            unset($client['password_hash']);
             $_SESSION['client_auth'] = $client;
             header("Location: client_portal.php");
             exit;
@@ -106,6 +109,7 @@ if ($is_logged_in) {
     } catch (Throwable $e) {
         // quotes 表尚未建立時略過
     }
+    expire_overdue_invoices();
 
     $global_stats = db_fetch_one("
         SELECT 
@@ -294,6 +298,7 @@ $inv_status_options = [
             <?php endif; ?>
             
             <form method="POST">
+                <?= csrf_field() ?>
                 <input type="hidden" name="client_login" value="1">
                 <div class="mb-3">
                     <label class="form-label fw-semibold text-slate-600 small mb-1">公司登入帳號 (Username)</label>
@@ -635,5 +640,17 @@ $inv_status_options = [
 <?php endif; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.querySelectorAll('form').forEach(function(f) {
+    var method = (f.getAttribute('method') || 'get').toLowerCase();
+    if (method !== 'post') return;
+    if (f.querySelector('input[name="csrf_token"]')) return;
+    var i = document.createElement('input');
+    i.type = 'hidden';
+    i.name = 'csrf_token';
+    i.value = <?= json_encode(function_exists('csrf_token') ? csrf_token() : '') ?>;
+    f.appendChild(i);
+});
+</script>
 </body>
 </html>

@@ -7,6 +7,7 @@ USE ki_ops;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS activity_log;
 DROP TABLE IF EXISTS invoice_items;
 DROP TABLE IF EXISTS quote_items;
 DROP TABLE IF EXISTS quotes;
@@ -185,6 +186,7 @@ CREATE TABLE recurring_invoices (
     frequency ENUM('monthly', 'quarterly', 'yearly', 'every_30_days') DEFAULT 'monthly',
     start_date DATE NOT NULL,
     next_invoice_date DATE NOT NULL,
+    contract_end_date DATE NULL,
     status ENUM('active', 'paused', 'ended') DEFAULT 'active',
     notes TEXT,
     created_by INT,
@@ -241,6 +243,17 @@ CREATE TABLE quote_items (
     line_total DECIMAL(12,2) NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (quote_id) REFERENCES quotes(id) ON DELETE CASCADE
+);
+
+CREATE TABLE activity_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    action VARCHAR(50) NOT NULL,
+    table_name VARCHAR(50) NULL,
+    record_id INT NULL,
+    details TEXT NULL,
+    ip_address VARCHAR(45) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ==========================================

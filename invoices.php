@@ -3,12 +3,14 @@ require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_once 'includes/numbering.php';
+require_once 'includes/billing_helpers.php';
 require_login();
 
 // 防護：PM, Finance, Viewer 可進入 (Developer 無需接觸財務)
 require_any_role(['pm', 'finance', 'viewer']);
 
 $success = $error = '';
+expire_overdue_invoices();
 
 // 接收篩選與分頁參數
 $search = trim($_GET['search'] ?? '');
@@ -100,6 +102,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             
             db_update('invoices', $data, 'id = ?', [$invoice_id]);
+            $existing_items = [];
+            try {
+                $existing_items = db_fetch_all("SELECT id, line_total FROM invoice_items WHERE invoice_id = ?", [$invoice_id]) ?: [];
+            } catch (Throwable $e) {
+                $existing_items = [];
+            }
+            $items_sum = 0.0;
+            foreach ($existing_items as $it) {
+                $items_sum += (float)$it['line_total'];
+            }
+            if (count($existing_items) <= 1 || abs($items_sum - $subtotal) > 0.009) {
+                $inv_row = db_fetch_one(
+                    "SELECT i.*, p.title AS project_title FROM invoices i LEFT JOIN projects p ON p.id = i.project_id WHERE i.id = ?",
+                    [$invoice_id]
+                );
+                replace_invoice_items_from_subtotal(
+                    $invoice_id,
+                    $subtotal,
+                    $inv_row['project_title'] ?? 'Professional Services & Consulting',
+                    $data['notes']
+                );
+            }
             $success = '發票內容及狀態已成功更新！';
         }
         

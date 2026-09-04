@@ -30,6 +30,18 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    document.querySelectorAll('form').forEach(function(f) {
+        var method = (f.getAttribute('method') || 'get').toLowerCase();
+        if (method !== 'post') return;
+        if (f.querySelector('input[name="csrf_token"]')) return;
+        var i = document.createElement('input');
+        i.type = 'hidden';
+        i.name = 'csrf_token';
+        i.value = <?= json_encode(csrf_token()) ?>;
+        f.appendChild(i);
+    });
+    </script>
     </body>
     </html>
 
@@ -74,6 +86,17 @@
                 alert.style.opacity = "0";
                 setTimeout(() => { alert.remove(); }, 500);
             }, 4500);
+        });
+
+        document.querySelectorAll('form').forEach(function(f) {
+            var method = (f.getAttribute('method') || 'get').toLowerCase();
+            if (method !== 'post') return;
+            if (f.querySelector('input[name="csrf_token"]')) return;
+            var i = document.createElement('input');
+            i.type = 'hidden';
+            i.name = 'csrf_token';
+            i.value = <?= json_encode(csrf_token()) ?>;
+            f.appendChild(i);
         });
     });
     </script>
