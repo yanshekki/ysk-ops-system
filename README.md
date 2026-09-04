@@ -1,8 +1,12 @@
-# YSK Ops System v2.6
+# YSK Ops System v2.7
 
-**純 PHP + MySQL 企業級內部運作與客戶管理系統** 專為 YSK Limited 設計的全方位營運管理平台，涵蓋企業級 RBAC 權限控制、客戶自助門戶 (Client Portal)、專案進度、工時追蹤、發票計費與高階財務分析。
+**純 PHP + MySQL 企業級內部運作與客戶管理系統** 專為 YSK Limited 設計的全方位營運管理平台，涵蓋企業級 RBAC 權限控制、客戶自助門戶 (Client Portal)、書面報價、專案進度、工時追蹤、發票計費與高階財務分析。
 
-## 🌟 系統最新亮點 (v2.6)
+## 🌟 系統最新亮點 (v2.7)
+- **報價單模組**：對齊 ysk.hk 公開方案（外判月費、私有 LLM、SalonEase、定製工程），多行明細、中英 PDF、客戶門戶接受／拒絕，接受後轉換為發票 + 週期單 + 專案；報價本身不計入收入。
+- **順序單號**：`QT-YYYYMM-001` / `INV-YYYYMM-001`，避免舊有 rand 撞號。
+
+## 🌟 v2.6 既有亮點
 - **企業級 RBAC 權限架構**：嚴格劃分 5 大角色 (`Admin`, `PM`, `Developer`, `Finance`, `Viewer`)，實踐頁面級 (Page)、介面級 (UI) 及資料層 (Data Level) 的深度防護。
 - **客戶自助門戶 (Client Portal)**：客戶擁有專屬的獨立安全登入系統，可隨時查看專案進度、查閱帳單及下載發票。
 - **雙語 PDF 發票系統**：支援一鍵切換中/英文版本的專業 A4 格式發票，並帶有防偽浮水印與完整的銀行轉賬/轉數快 (FPS) 付款指示。
@@ -22,8 +26,9 @@
 - **工時記錄 (Timesheets)**：日常工時申報與管理層審核機制。
 
 ### 3. 財務與計費系統
-- **發票管理 (Invoices)**：開立、編輯、作廢及追蹤應收賬款，支援匯出 PDF。
-- **週期性發票 (Recurring)**：自動推算計費週期（月、季、年），一鍵生成新發票。
+- **報價單 (Quotes)**：lead／活躍客戶書面報價，YSK 服務模板、有效期、修訂、轉換。週期項目第一期入首張發票，下次週期日跳過第一期。
+- **發票管理 (Invoices)**：開立、編輯、作廢及追蹤應收賬款，支援匯出 PDF；可由報價轉入明細。
+- **週期性發票 (Recurring)**：自動推算計費週期（月、季、年、每 30 日），一鍵生成新發票。
 
 ### 4. 管理層決策工具 (CEO Tools)
 - **全域數據儀表板**：即時查看業務管線總值 (Pipeline)、待收款及已收款總額。
@@ -41,9 +46,11 @@
 ## ⚙️ 安裝與部署
 1. Clone 或下載本 Repository。
 2. 建立 MySQL 資料庫，並匯入 `database.sql` (內含過百條真實模擬測試數據)。
-3. 修改 `config.php` 中的資料庫連線設定。
-4. 上傳至任何支援 PHP 的 Web Hosting 或伺服器。
-5. 訪問 `index.php` 即可登入。
+3. **現有 production 資料庫**請跑 additive migration，**不要**重跑會 DROP 表的 `database.sql`：
+   `mysql ... ki_ops < migrations/2026-09-04-quotes.sql`
+4. 修改 `config.php` 中的資料庫連線設定。
+5. 上傳至任何支援 PHP 的 Web Hosting 或伺服器。
+6. 訪問 `index.php` 即可登入。
    - *管理員測試帳號*：`admin` / `password`
    - *客戶 Portal 測試帳號*：`apex0` / `password` (請訪問 `client_portal.php`)
 

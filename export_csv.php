@@ -25,6 +25,22 @@ if ($type === 'invoices') {
             $inv['status']
         ]);
     }
+} elseif ($type === 'quotes') {
+    fputcsv($output, ['報價編號', '客戶', '標題', '狀態', '開立日', '有效期', '小計', '折扣', '總額']);
+    $quotes = db_fetch_all("SELECT q.*, c.company_name FROM quotes q LEFT JOIN clients c ON q.client_id = c.id ORDER BY q.created_at DESC");
+    foreach ($quotes as $q) {
+        fputcsv($output, [
+            $q['quote_number'],
+            $q['company_name'],
+            $q['title'],
+            $q['status'],
+            $q['issue_date'],
+            $q['valid_until'],
+            $q['subtotal'],
+            $q['discount_amount'],
+            $q['total_amount'],
+        ]);
+    }
 } elseif ($type === 'clients') {
     fputcsv($output, ['公司名稱', '聯絡人', '電郵', '電話', '狀態', '建立日期']);
     $clients = db_fetch_all("SELECT * FROM clients");

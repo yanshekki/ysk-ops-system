@@ -203,7 +203,7 @@ $status_labels = [
                                     <th>聯絡方式</th>
                                     <th>狀態</th>
                                     <th>加入日期</th>
-                                    <th width="140" class="text-end pe-4">操作</th>
+                                    <th width="180" class="text-end pe-4">操作</th>
                                 </tr>
                             </thead>
                             <tbody class="border-top-0">
@@ -241,6 +241,9 @@ $status_labels = [
                                     </td>
                                     <td class="text-muted small"><?= date('Y-m-d', strtotime($c['created_at'])) ?></td>
                                     <td class="text-end pe-4">
+                                        <?php if (has_any_role(['admin', 'pm', 'finance'])): ?>
+                                            <a href="quote_edit.php?client_id=<?= (int)$c['id'] ?>" class="btn btn-sm btn-light border text-primary me-1" title="開報價"><i class="bi bi-file-earmark-plus"></i></a>
+                                        <?php endif; ?>
                                         <?php if (has_any_role(['admin', 'pm'])): ?>
                                             <button class="btn btn-sm btn-light border text-primary me-1" data-bs-toggle="modal" data-bs-target="#editClientModal<?= $c['id'] ?>" title="編輯"><i class="bi bi-pencil-square"></i></button>
                                             

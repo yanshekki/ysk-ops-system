@@ -107,14 +107,26 @@ $total_count = db_fetch_one("SELECT COUNT(*) as total FROM projects p LEFT JOIN 
 $total_pages = ceil($total_count / $per_page);
 
 // 獲取項目列表
-$sql = "SELECT p.*, c.company_name, u.full_name as pm_name 
+$sql = "SELECT p.*, c.company_name, u.full_name as pm_name, q.quote_number, q.id as source_quote_id
         FROM projects p 
         LEFT JOIN clients c ON p.client_id = c.id 
         LEFT JOIN users u ON p.assigned_pm_id = u.id 
+        LEFT JOIN quotes q ON q.id = p.quote_id
         WHERE $where_sql 
         ORDER BY CASE WHEN p.status IN ('completed', 'cancelled') THEN 1 ELSE 0 END, p.updated_at DESC 
         LIMIT $per_page OFFSET $offset";
-$projects = db_fetch_all($sql, $params);
+try {
+    $projects = db_fetch_all($sql, $params);
+} catch (Throwable $e) {
+    $sql = "SELECT p.*, c.company_name, u.full_name as pm_name 
+            FROM projects p 
+            LEFT JOIN clients c ON p.client_id = c.id 
+            LEFT JOIN users u ON p.assigned_pm_id = u.id 
+            WHERE $where_sql 
+            ORDER BY CASE WHEN p.status IN ('completed', 'cancelled') THEN 1 ELSE 0 END, p.updated_at DESC 
+            LIMIT $per_page OFFSET $offset";
+    $projects = db_fetch_all($sql, $params);
+}
 
 // 獲取選單用資料
 $clients = db_fetch_all("SELECT id, company_name FROM clients WHERE status='active' ORDER BY company_name");
@@ -239,7 +251,11 @@ include 'includes/header.php';
                                 <?= htmlspecialchars($p['title']) ?>
                             </h5>
                             
-                            <p class="small text-muted mb-3"><i class="bi bi-building me-1"></i><?= htmlspecialchars($p['company_name'] ?? '未指定客戶') ?></p>
+                            <p class="small text-muted mb-3"><i class="bi bi-building me-1"></i><?= htmlspecialchars($p['company_name'] ?? '未指定客戶') ?>
+                                <?php if (!empty($p['quote_number'])): ?>
+                                    · <a href="quote_pdf.php?id=<?= (int)$p['source_quote_id'] ?>" target="_blank" class="text-decoration-none"><?= htmlspecialchars($p['quote_number']) ?></a>
+                                <?php endif; ?>
+                            </p>
                             
                             <div class="text-slate-600 small mb-4" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.8em;">
                                 <?= htmlspecialchars($p['description'] ?: '沒有詳細說明...') ?>

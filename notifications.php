@@ -214,6 +214,9 @@ include 'includes/header.php';
                                         <option value="progress">📊 專案進度更新</option>
                                         <option value="payment">💰 逾期付款提醒</option>
                                         <option value="meeting">📅 預約會議提醒</option>
+                                        <option value="quote_sent">📄 報價單已發送</option>
+                                        <option value="quote_expiring">⏰ 報價即將到期</option>
+                                        <option value="quote_accepted">✅ 報價已接受（跟進發票）</option>
                                     </select>
                                 </div>
                                 
@@ -337,7 +340,10 @@ function applyTemplate() {
     const templates = {
         'progress': '【YSK 專案進度更新】\n您好，您委託的項目有最新進度更新！\n\n請登入客戶自助門戶查看詳細開發日誌及測試環境連結：\n👉 https://ysk.hk/portal\n\n如有任何問題，歡迎隨時聯絡我們。',
         'payment': '【YSK 付款提醒】\n您好，系統顯示您的賬單（發票）即將到期或已逾期。\n\n為免影響服務進度，請盡快付款，請忽略此訊息。謝謝您的合作！',
-        'meeting': '【YSK 會議提醒】\n您好，這是一則溫馨的會議提醒。\n我們即將在稍後進行線上/實體會議，請您準時出席。\n\n如需更改時間，請盡早通知負責的專案經理。謝謝！'
+        'meeting': '【YSK 會議提醒】\n您好，這是一則溫馨的會議提醒。\n我們即將在稍後進行線上/實體會議，請您準時出席。\n\n如需更改時間，請盡早通知負責的專案經理。謝謝！',
+        'quote_sent': '【YSK 報價單】\n您好，我們已為您準備書面報價。\n\n請登入客戶自助門戶查閱及回覆：\n👉 https://ops.ysk.hk/client_portal.php\n\n如有任何問題，歡迎 WhatsApp +852 6160 4242。',
+        'quote_expiring': '【YSK 報價即將到期】\n您好，您的報價單即將到期。逾期後需重新報價。\n\n請登入客戶門戶查閱：\n👉 https://ops.ysk.hk/client_portal.php',
+        'quote_accepted': '【YSK 報價已確認】\n您好，我們已收到您接受報價的確認。稍後將發出正式發票及付款指示。\n\n感謝您選擇 YSK Limited。'
     };
     
     const select = document.getElementById('templateSelect');

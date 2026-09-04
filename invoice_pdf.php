@@ -36,6 +36,16 @@ if (!$invoice) {
     die('找不到該發票 (Invoice not found)');
 }
 
+$invoice_items = [];
+try {
+    $invoice_items = db_fetch_all(
+        "SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order ASC, id ASC",
+        [$invoice_id]
+    ) ?: [];
+} catch (Throwable $e) {
+    $invoice_items = [];
+}
+
 // 核心安全限制：客戶只能看自己的單
 if (!$is_staff && $is_client) {
     if ($invoice['client_id'] != $_SESSION['client_auth']['id']) {
@@ -461,6 +471,22 @@ header('Content-Type: text/html; charset=utf-8');
                     </tr>
                 </thead>
                 <tbody>
+                    <?php if ($invoice_items): ?>
+                        <?php foreach ($invoice_items as $line): ?>
+                        <tr>
+                            <td>
+                                <div class="item-title"><?= htmlspecialchars($line['title']) ?></div>
+                                <?php if (!empty($line['description'])): ?>
+                                    <div class="item-desc"><?= nl2br(htmlspecialchars($line['description'])) ?></div>
+                                <?php endif; ?>
+                                <?php if ((float)$line['qty'] != 1): ?>
+                                    <div class="item-desc"><?= rtrim(rtrim(number_format((float)$line['qty'], 2), '0'), '.') ?> × <?= htmlspecialchars($line['unit'] ?? '') ?> × <?= number_format((float)$line['unit_price'], 2) ?></div>
+                                <?php endif; ?>
+                            </td>
+                            <td class="item-amount"><?= number_format((float)$line['line_total'], 2) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
                     <tr>
                         <td>
                             <div class="item-title">
@@ -474,6 +500,7 @@ header('Content-Type: text/html; charset=utf-8');
                             <?= number_format($invoice['subtotal'] ?? 0, 2) ?>
                         </td>
                     </tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
 

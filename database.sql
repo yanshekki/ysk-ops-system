@@ -1,4 +1,4 @@
--- YSK Ops System v2.6 Database Schema & Massive Sample Data
+-- YSK Ops System v2.7 Database Schema & Massive Sample Data
 -- 包含最新 SaaS 級別結構與大量測試數據 (幾十條 records per table)
 -- 密碼統一為: password
 
@@ -7,6 +7,9 @@ USE ki_ops;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS invoice_items;
+DROP TABLE IF EXISTS quote_items;
+DROP TABLE IF EXISTS quotes;
 DROP TABLE IF EXISTS timesheets;
 DROP TABLE IF EXISTS invoices;
 DROP TABLE IF EXISTS recurring_invoices;
@@ -65,6 +68,7 @@ CREATE TABLE projects (
     progress_percent INT DEFAULT 0 CHECK (progress_percent BETWEEN 0 AND 100),
     assigned_pm_id INT,
     created_by INT,
+    quote_id INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
@@ -97,6 +101,8 @@ CREATE TABLE invoices (
     invoice_number VARCHAR(50) UNIQUE NOT NULL,
     client_id INT NOT NULL,
     project_id INT,
+    quote_id INT NULL,
+    source ENUM('manual', 'quote', 'recurring') DEFAULT 'manual',
     issue_date DATE NOT NULL,
     due_date DATE NOT NULL,
     subtotal DECIMAL(12,2) DEFAULT 0,
@@ -110,6 +116,20 @@ CREATE TABLE invoices (
     FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE invoice_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    invoice_id INT NOT NULL,
+    sort_order INT DEFAULT 0,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    qty DECIMAL(10,2) NOT NULL DEFAULT 1,
+    unit VARCHAR(20) DEFAULT '項',
+    unit_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+    line_total DECIMAL(12,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
 );
 
 -- 6. Timesheets
@@ -159,9 +179,10 @@ CREATE TABLE recurring_invoices (
     id INT AUTO_INCREMENT PRIMARY KEY,
     client_id INT NOT NULL,
     project_id INT NULL,
+    quote_id INT NULL,
     title VARCHAR(200) NOT NULL,
     amount DECIMAL(12,2) NOT NULL,
-    frequency ENUM('monthly', 'quarterly', 'yearly') DEFAULT 'monthly',
+    frequency ENUM('monthly', 'quarterly', 'yearly', 'every_30_days') DEFAULT 'monthly',
     start_date DATE NOT NULL,
     next_invoice_date DATE NOT NULL,
     status ENUM('active', 'paused', 'ended') DEFAULT 'active',
@@ -171,6 +192,55 @@ CREATE TABLE recurring_invoices (
     FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- 10. Quotes
+CREATE TABLE quotes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    quote_number VARCHAR(50) UNIQUE NOT NULL,
+    client_id INT NOT NULL,
+    project_id INT NULL,
+    title VARCHAR(200) NOT NULL,
+    intro_text TEXT,
+    status ENUM('draft', 'sent', 'accepted', 'declined', 'expired', 'converted', 'superseded') DEFAULT 'draft',
+    issue_date DATE NOT NULL,
+    valid_until DATE NOT NULL,
+    tax_percent DECIMAL(5,2) DEFAULT 0,
+    discount_amount DECIMAL(12,2) DEFAULT 0,
+    subtotal DECIMAL(12,2) DEFAULT 0,
+    total_amount DECIMAL(12,2) DEFAULT 0,
+    notes TEXT,
+    terms TEXT,
+    created_by INT,
+    sent_at DATETIME NULL,
+    accepted_at DATETIME NULL,
+    declined_at DATETIME NULL,
+    converted_invoice_id INT NULL,
+    converted_project_id INT NULL,
+    converted_recurring_id INT NULL,
+    revision_of_id INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (revision_of_id) REFERENCES quotes(id) ON DELETE SET NULL
+);
+
+CREATE TABLE quote_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    quote_id INT NOT NULL,
+    sort_order INT DEFAULT 0,
+    catalog_key VARCHAR(80) NULL,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    billing_type ENUM('one_time', 'monthly', 'quarterly', 'yearly', 'every_30_days') NOT NULL DEFAULT 'one_time',
+    qty DECIMAL(10,2) NOT NULL DEFAULT 1,
+    unit VARCHAR(20) DEFAULT '項',
+    unit_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+    line_total DECIMAL(12,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (quote_id) REFERENCES quotes(id) ON DELETE CASCADE
 );
 
 -- ==========================================

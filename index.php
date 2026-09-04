@@ -46,6 +46,16 @@ if (is_logged_in()) {
              WHERE i.invoice_number LIKE ? OR c.company_name LIKE ? LIMIT 5", 
             ["%$global_search%", "%$global_search%"]
         );
+        try {
+            $global_results['quotes'] = db_fetch_all(
+                "SELECT q.id, q.quote_number, q.title, q.status, q.total_amount, c.company_name
+                 FROM quotes q LEFT JOIN clients c ON q.client_id = c.id
+                 WHERE q.quote_number LIKE ? OR q.title LIKE ? OR c.company_name LIKE ? LIMIT 5",
+                ["%$global_search%", "%$global_search%", "%$global_search%"]
+            );
+        } catch (Throwable $e) {
+            $global_results['quotes'] = [];
+        }
     }
     
     // Dashboard stats
@@ -54,10 +64,19 @@ if (is_logged_in()) {
         'projects' => db_fetch_one("SELECT COUNT(*) as c FROM projects WHERE status IN ('planning', 'in_progress', 'review')")['c'] ?? 0,
         'tasks_todo' => db_fetch_one("SELECT COUNT(*) as c FROM tasks WHERE status != 'done'")['c'] ?? 0,
         'pipeline_value' => db_fetch_one("SELECT SUM(budget) as s FROM projects WHERE status IN ('planning', 'in_progress', 'review')")['s'] ?? 0,
+        'open_quotes' => 0,
+        'open_quotes_count' => 0,
         'pending_revenue' => db_fetch_one("SELECT SUM(total_amount) as s FROM invoices WHERE status IN ('sent', 'overdue')")['s'] ?? 0,
         'invoices_pending_count' => db_fetch_one("SELECT COUNT(*) as c FROM invoices WHERE status IN ('draft', 'sent', 'overdue')")['c'] ?? 0,
         'total_revenue' => db_fetch_one("SELECT SUM(total_amount) as s FROM invoices WHERE status = 'paid'")['s'] ?? 0,
     ];
+    try {
+        $oq = db_fetch_one("SELECT COALESCE(SUM(total_amount),0) AS s, COUNT(*) AS c FROM quotes WHERE status = 'sent'");
+        $stats['open_quotes'] = $oq['s'] ?? 0;
+        $stats['open_quotes_count'] = $oq['c'] ?? 0;
+    } catch (Throwable $e) {
+        // quotes 表尚未建立
+    }
     
     $recent_projects = db_fetch_all("
         SELECT p.*, c.company_name FROM projects p JOIN clients c ON p.client_id = c.id ORDER BY p.updated_at DESC LIMIT 5
@@ -180,7 +199,46 @@ include 'includes/header.php';
                                 </div>
                             </div>
                             <?php endif; ?>
-                            <?php if (empty($global_results['clients']) && empty($global_results['projects']) && empty($global_results['invoices'])): ?>
+                            <?php if (!empty($global_results['projects'])): ?>
+                            <div class="col-md-4">
+                                <h6 class="text-primary fw-bold mb-2"><i class="bi bi-folder2-open me-2"></i>專案</h6>
+                                <div class="list-group shadow-none">
+                                    <?php foreach ($global_results['projects'] as $gp): ?>
+                                    <a href="projects.php?search=<?= urlencode($gp['title'] ?? '') ?>" class="list-group-item list-group-item-action border rounded-3 mb-1">
+                                        <div class="fw-bold text-slate-800 small"><?= htmlspecialchars($gp['title'] ?? '') ?></div>
+                                        <div class="text-muted small"><?= htmlspecialchars($gp['company_name'] ?? '') ?></div>
+                                    </a>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (!empty($global_results['invoices'])): ?>
+                            <div class="col-md-4">
+                                <h6 class="text-primary fw-bold mb-2"><i class="bi bi-receipt me-2"></i>發票</h6>
+                                <div class="list-group shadow-none">
+                                    <?php foreach ($global_results['invoices'] as $gi): ?>
+                                    <a href="invoices.php?search=<?= urlencode($gi['invoice_number'] ?? '') ?>" class="list-group-item list-group-item-action border rounded-3 mb-1">
+                                        <div class="fw-bold text-slate-800 small"><?= htmlspecialchars($gi['invoice_number'] ?? '') ?></div>
+                                        <div class="text-muted small"><?= htmlspecialchars($gi['company_name'] ?? '') ?></div>
+                                    </a>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (!empty($global_results['quotes'])): ?>
+                            <div class="col-md-4">
+                                <h6 class="text-primary fw-bold mb-2"><i class="bi bi-file-earmark-ruled me-2"></i>報價單</h6>
+                                <div class="list-group shadow-none">
+                                    <?php foreach ($global_results['quotes'] as $gq): ?>
+                                    <a href="quotes.php?search=<?= urlencode($gq['quote_number'] ?? '') ?>" class="list-group-item list-group-item-action border rounded-3 mb-1">
+                                        <div class="fw-bold text-slate-800 small"><?= htmlspecialchars($gq['quote_number'] ?? '') ?> · <?= htmlspecialchars($gq['title'] ?? '') ?></div>
+                                        <div class="text-muted small"><?= htmlspecialchars($gq['company_name'] ?? '') ?></div>
+                                    </a>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (empty($global_results['clients']) && empty($global_results['projects']) && empty($global_results['invoices']) && empty($global_results['quotes'])): ?>
                             <div class="col-12"><div class="alert alert-light border text-center py-4 mb-0 text-muted">無匹配紀錄。</div></div>
                             <?php endif; ?>
                         </div>
@@ -203,7 +261,12 @@ include 'includes/header.php';
                         <div class="card stat-card shadow-sm h-100 border-0 border-left-thick" style="border-left-color: #10b981 !important;">
                             <div class="card-body p-4 d-flex flex-column justify-content-between">
                                 <div><small class="text-muted d-block fw-semibold mb-1">業務管線總值</small><h3 class="fw-bold mb-0 text-success">HK$ <?= number_format($stats['pipeline_value'], 0) ?></h3></div>
-                                <div class="mt-3 text-muted small"><i class="bi bi-graph-up-arrow text-success me-1"></i>來自進行中項目</div>
+                                <div class="mt-3 text-muted small">
+                                    <i class="bi bi-graph-up-arrow text-success me-1"></i>進行中項目
+                                    <?php if (($stats['open_quotes_count'] ?? 0) > 0): ?>
+                                        <div class="mt-1"><a href="quotes.php?status=sent" class="text-decoration-none">待回覆報價 <?= (int)$stats['open_quotes_count'] ?> 張 · HK$ <?= number_format((float)$stats['open_quotes'], 0) ?></a>（非收入）</div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                     </div>

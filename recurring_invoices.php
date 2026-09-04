@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
+require_once 'includes/numbering.php';
 require_login();
 
 // 防護：PM, Finance, Viewer 可進入 (Developer 無需接觸財務)
@@ -32,13 +33,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $recurring = db_fetch_one("SELECT * FROM recurring_invoices WHERE id = ?", [$recurring_id]);
             
             if ($recurring && $recurring['status'] == 'active') {
-                $invoice_number = 'INV-' . date('Ymd') . '-' . str_pad(rand(1,999), 3, '0', STR_PAD_LEFT);
+                $invoice_number = next_invoice_number();
                 
-                // 對應 invoices 表的結構
                 $invoice_data = [
                     'invoice_number' => $invoice_number,
                     'client_id' => $recurring['client_id'],
                     'project_id' => $recurring['project_id'],
+                    'quote_id' => $recurring['quote_id'] ?? null,
+                    'source' => 'recurring',
                     'issue_date' => date('Y-m-d'),
                     'due_date' => date('Y-m-d', strtotime('+30 days')),
                     'subtotal' => $recurring['amount'],
@@ -49,9 +51,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'created_by' => $_SESSION['user_id']
                 ];
                 
-                db_insert('invoices', $invoice_data);
+                try {
+                    $inv_id = (int)db_insert('invoices', $invoice_data);
+                } catch (PDOException $e) {
+                    $invoice_data['invoice_number'] = next_invoice_number();
+                    $invoice_number = $invoice_data['invoice_number'];
+                    $inv_id = (int)db_insert('invoices', $invoice_data);
+                }
+                try {
+                    db_insert('invoice_items', [
+                        'invoice_id' => $inv_id,
+                        'sort_order' => 0,
+                        'title' => $recurring['title'],
+                        'description' => $recurring['notes'] ?? '',
+                        'qty' => 1,
+                        'unit' => '期',
+                        'unit_price' => $recurring['amount'],
+                        'line_total' => $recurring['amount'],
+                    ]);
+                } catch (Throwable $e) {
+                    // invoice_items 尚未 migration 時略過
+                }
                 
-                // 根據頻率計算下次發票日
                 $next_date = $recurring['next_invoice_date'];
                 switch ($recurring['frequency']) {
                     case 'monthly':
@@ -62,6 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         break;
                     case 'yearly':
                         $next_date = date('Y-m-d', strtotime($next_date . ' +1 year'));
+                        break;
+                    case 'every_30_days':
+                        $next_date = date('Y-m-d', strtotime($next_date . ' +30 days'));
                         break;
                 }
                 
@@ -169,7 +193,8 @@ $projects = db_fetch_all("SELECT id, title FROM projects WHERE status != 'cancel
 $frequency_labels = [
     'monthly' => ['label' => '每月', 'color' => 'primary', 'icon' => 'bi-calendar-month'],
     'quarterly' => ['label' => '每季', 'color' => 'info', 'icon' => 'bi-calendar3'],
-    'yearly' => ['label' => '每年', 'color' => 'dark', 'icon' => 'bi-calendar-check'] // 改用 dark 確保清晰可見
+    'yearly' => ['label' => '每年', 'color' => 'dark', 'icon' => 'bi-calendar-check'],
+    'every_30_days' => ['label' => '每 30 日', 'color' => 'warning', 'icon' => 'bi-calendar-week'],
 ];
 
 $status_options = [

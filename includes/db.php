@@ -60,4 +60,25 @@ function db_delete($table, $where, $params = []) {
     $stmt->execute($params);
     return $stmt->rowCount();
 }
+
+function db_transaction(callable $fn) {
+    $pdo = get_db_connection();
+    $started = false;
+    if (!$pdo->inTransaction()) {
+        $pdo->beginTransaction();
+        $started = true;
+    }
+    try {
+        $result = $fn($pdo);
+        if ($started) {
+            $pdo->commit();
+        }
+        return $result;
+    } catch (Throwable $e) {
+        if ($started && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+}
 ?>

@@ -1,6 +1,7 @@
 <?php
 require_once 'config.php';
 require_once 'includes/db.php';
+require_once 'includes/quote_helpers.php';
 
 // 啟動 Session (確保沒有重複啟動)
 if (session_status() === PHP_SESSION_NONE) {
@@ -42,34 +43,90 @@ $client = $is_logged_in ? $_SESSION['client_auth'] : null;
 
 $projects = [];
 $invoices = [];
+$quotes = [];
 $outstanding_balance = 0;
 $active_projects_count = 0;
+$pending_quotes_count = 0;
+$portal_notice = '';
+$portal_error = '';
 
-// 分頁與 Tab 狀態設定
 $active_tab = $_GET['tab'] ?? 'projects';
 $p_page = max(1, (int)($_GET['p_page'] ?? 1));
 $i_page = max(1, (int)($_GET['i_page'] ?? 1));
-$per_page = 6; // 每頁顯示數量 (專案卡片較大，設為6個剛好)
+$q_page = max(1, (int)($_GET['q_page'] ?? 1));
+$per_page = 6;
 
 $p_total_pages = 0;
 $i_total_pages = 0;
+$q_total_pages = 0;
 
 if ($is_logged_in) {
     $client_id = $client['id'];
-    
-    // 1. 計算全域統計數據 (不受分頁影響)
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['portal_quote_action'])) {
+        $qid = (int)($_POST['quote_id'] ?? 0);
+        $qrow = db_fetch_one("SELECT * FROM quotes WHERE id = ? AND client_id = ?", [$qid, $client_id]);
+        quote_expire_stale();
+        if ($qrow) {
+            $qrow = db_fetch_one("SELECT * FROM quotes WHERE id = ?", [$qid]);
+        }
+        try {
+            if (!$qrow) {
+                throw new RuntimeException('找不到該報價單。');
+            }
+            if ($_POST['portal_quote_action'] === 'accept') {
+                if (!quote_can('accept', $qrow)) {
+                    throw new RuntimeException('此報價單不能接受（可能已過期或已處理）。');
+                }
+                db_update('quotes', [
+                    'status' => 'accepted',
+                    'accepted_at' => date('Y-m-d H:i:s'),
+                ], 'id = ?', [$qid]);
+                quote_promote_lead($client_id);
+                $portal_notice = '已接受報價 ' . $qrow['quote_number'] . '。我們將發出正式發票。';
+            } elseif ($_POST['portal_quote_action'] === 'decline') {
+                if (!quote_can('decline', $qrow)) {
+                    throw new RuntimeException('此報價單不能拒絕。');
+                }
+                db_update('quotes', [
+                    'status' => 'declined',
+                    'declined_at' => date('Y-m-d H:i:s'),
+                ], 'id = ?', [$qid]);
+                $portal_notice = '已拒絕報價 ' . $qrow['quote_number'] . '。';
+            }
+            $active_tab = 'quotes';
+        } catch (Throwable $e) {
+            $portal_error = $e->getMessage();
+            $active_tab = 'quotes';
+        }
+    }
+
+    try {
+        quote_expire_stale();
+    } catch (Throwable $e) {
+        // quotes 表尚未建立時略過
+    }
+
     $global_stats = db_fetch_one("
         SELECT 
             (SELECT COUNT(*) FROM projects WHERE client_id = ? AND status NOT IN ('completed', 'cancelled')) as active_projects,
-            (SELECT COALESCE(SUM(total_amount), 0) FROM invoices WHERE client_id = ? AND status IN ('sent', 'overdue', 'draft')) as outstanding_balance
+            (SELECT COALESCE(SUM(total_amount), 0) FROM invoices WHERE client_id = ? AND status IN ('sent', 'overdue')) as outstanding_balance
     ", [$client_id, $client_id]);
     
     $active_projects_count = $global_stats['active_projects'];
     $outstanding_balance = $global_stats['outstanding_balance'];
+
+    try {
+        $pending_quotes_count = (int)(db_fetch_one(
+            "SELECT COUNT(*) AS c FROM quotes WHERE client_id = ? AND status = 'sent'",
+            [$client_id]
+        )['c'] ?? 0);
+    } catch (Throwable $e) {
+        $pending_quotes_count = 0;
+    }
     
-    // 2. 計算總筆數與分頁
     $total_projects = db_fetch_one("SELECT COUNT(*) as c FROM projects WHERE client_id = ?", [$client_id])['c'] ?? 0;
-    $total_invoices = db_fetch_one("SELECT COUNT(*) as c FROM invoices WHERE client_id = ?", [$client_id])['c'] ?? 0;
+    $total_invoices = db_fetch_one("SELECT COUNT(*) as c FROM invoices WHERE client_id = ? AND status NOT IN ('draft', 'cancelled')", [$client_id])['c'] ?? 0;
     
     $p_total_pages = ceil($total_projects / $per_page);
     $i_total_pages = ceil($total_invoices / $per_page);
@@ -77,7 +134,6 @@ if ($is_logged_in) {
     $p_offset = ($p_page - 1) * $per_page;
     $i_offset = ($i_page - 1) * $per_page;
     
-    // 3. 獲取登入客戶專屬的項目與發票 (帶分頁限制)
     $projects = db_fetch_all("
         SELECT * FROM projects 
         WHERE client_id = ? 
@@ -87,10 +143,28 @@ if ($is_logged_in) {
     
     $invoices = db_fetch_all("
         SELECT * FROM invoices 
-        WHERE client_id = ? 
+        WHERE client_id = ? AND status NOT IN ('draft', 'cancelled')
         ORDER BY issue_date DESC 
         LIMIT $per_page OFFSET $i_offset
     ", [$client_id]);
+
+    try {
+        $total_quotes = db_fetch_one(
+            "SELECT COUNT(*) AS c FROM quotes WHERE client_id = ? AND status != 'draft'",
+            [$client_id]
+        )['c'] ?? 0;
+        $q_total_pages = (int)ceil($total_quotes / $per_page);
+        $q_offset = ($q_page - 1) * $per_page;
+        $quotes = db_fetch_all("
+            SELECT * FROM quotes
+            WHERE client_id = ? AND status != 'draft'
+            ORDER BY issue_date DESC
+            LIMIT $per_page OFFSET $q_offset
+        ", [$client_id]);
+    } catch (Throwable $e) {
+        $quotes = [];
+        $q_total_pages = 0;
+    }
 }
 
 // 狀態標籤對應表
@@ -270,8 +344,10 @@ $inv_status_options = [
         
         <div class="mb-4 pb-2">
             <h2 class="fw-bold text-slate-800 mb-1">歡迎回來，<?= htmlspecialchars($client['contact_person'] ?: $client['company_name']) ?>！</h2>
-            <p class="text-muted">在這裡掌握您的專案開發進度，並輕鬆管理財務帳單。</p>
+            <p class="text-muted">在這裡掌握您的專案開發進度，查閱報價並管理財務帳單。</p>
         </div>
+        <?php if ($portal_notice): ?><div class="alert alert-success border-0 shadow-sm"><?= htmlspecialchars($portal_notice) ?></div><?php endif; ?>
+        <?php if ($portal_error): ?><div class="alert alert-danger border-0 shadow-sm"><?= htmlspecialchars($portal_error) ?></div><?php endif; ?>
 
         <div class="row g-4 mb-5">
             <div class="col-md-6">
@@ -301,12 +377,20 @@ $inv_status_options = [
         <div class="portal-card p-4">
             <ul class="nav nav-pills mb-4 border-bottom pb-3" id="portalTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link <?= $active_tab == 'projects' ? 'active' : '' ?>" id="projects-tab" data-bs-toggle="pill" data-bs-target="#projects" type="button" role="tab" onclick="history.replaceState(null, '', '?tab=projects&p_page=<?= $p_page ?>&i_page=<?= $i_page ?>')">
+                    <button class="nav-link <?= $active_tab == 'projects' ? 'active' : '' ?>" id="projects-tab" data-bs-toggle="pill" data-bs-target="#projects" type="button" role="tab" onclick="history.replaceState(null, '', '?tab=projects&p_page=<?= $p_page ?>&i_page=<?= $i_page ?>&q_page=<?= $q_page ?>')">
                         <i class="bi bi-folder2-open me-2"></i> 專案進度追蹤
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link <?= $active_tab == 'invoices' ? 'active' : '' ?>" id="invoices-tab" data-bs-toggle="pill" data-bs-target="#invoices" type="button" role="tab" onclick="history.replaceState(null, '', '?tab=invoices&p_page=<?= $p_page ?>&i_page=<?= $i_page ?>')">
+                    <button class="nav-link <?= $active_tab == 'quotes' ? 'active' : '' ?>" id="quotes-tab" data-bs-toggle="pill" data-bs-target="#quotes" type="button" role="tab" onclick="history.replaceState(null, '', '?tab=quotes&p_page=<?= $p_page ?>&i_page=<?= $i_page ?>&q_page=<?= $q_page ?>')">
+                        <i class="bi bi-file-earmark-ruled me-2"></i> 報價單
+                        <?php if ($pending_quotes_count > 0): ?>
+                            <span class="badge bg-warning text-dark ms-2 rounded-pill shadow-sm"><?= (int)$pending_quotes_count ?></span>
+                        <?php endif; ?>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link <?= $active_tab == 'invoices' ? 'active' : '' ?>" id="invoices-tab" data-bs-toggle="pill" data-bs-target="#invoices" type="button" role="tab" onclick="history.replaceState(null, '', '?tab=invoices&p_page=<?= $p_page ?>&i_page=<?= $i_page ?>&q_page=<?= $q_page ?>')">
                         <i class="bi bi-receipt-cutoff me-2"></i> 財務與發票
                         <?php if ($outstanding_balance > 0): ?>
                             <span class="badge bg-danger ms-2 rounded-pill shadow-sm">待處理</span>
@@ -380,6 +464,83 @@ $inv_status_options = [
                     <?php endif; ?>
                 </div>
                 
+                <div class="tab-pane fade <?= $active_tab == 'quotes' ? 'show active' : '' ?>" id="quotes" role="tabpanel">
+                    <?php if (empty($quotes)): ?>
+                        <div class="text-center py-5 bg-light rounded-3 border border-light-subtle my-2">
+                            <i class="bi bi-file-earmark-ruled fs-1 text-muted opacity-25 mb-3 d-block"></i>
+                            <h6 class="fw-bold text-slate-700">目前沒有報價單</h6>
+                            <p class="text-muted small">當我們發出書面報價時，將會顯示於此供您查閱或接受。</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle border rounded-3 overflow-hidden mb-0">
+                                <thead class="bg-light text-slate-600" style="font-size: 0.85rem;">
+                                    <tr>
+                                        <th class="py-3 ps-3">報價編號</th>
+                                        <th class="py-3">標題</th>
+                                        <th class="py-3">有效期</th>
+                                        <th class="py-3 text-end">金額 (HK$)</th>
+                                        <th class="py-3 text-center">狀態</th>
+                                        <th class="py-3 text-end pe-3">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($quotes as $pq):
+                                        $qbadge = get_quote_status_badge($pq['status']);
+                                        $can_reply = quote_can('accept', $pq);
+                                    ?>
+                                    <tr>
+                                        <td class="ps-3 py-3 fw-bold"><?= htmlspecialchars($pq['quote_number']) ?></td>
+                                        <td><?= htmlspecialchars($pq['title']) ?></td>
+                                        <td class="small <?= $pq['status'] === 'expired' ? 'text-danger fw-bold' : 'text-slate-600' ?>"><?= htmlspecialchars($pq['valid_until']) ?></td>
+                                        <td class="text-end fw-bold"><?= number_format((float)$pq['total_amount'], 2) ?></td>
+                                        <td class="text-center">
+                                            <span class="badge bg-<?= $qbadge['color'] ?> bg-opacity-10 text-<?= $qbadge['color'] ?>"><?= $qbadge['label'] ?></span>
+                                        </td>
+                                        <td class="text-end pe-3">
+                                            <div class="d-flex justify-content-end gap-2 flex-wrap">
+                                                <a href="quote_pdf.php?id=<?= (int)$pq['id'] ?>&lang=zh" target="_blank" class="btn btn-sm btn-light border text-primary fw-medium">
+                                                    <i class="bi bi-download me-1"></i> PDF
+                                                </a>
+                                                <?php if ($can_reply): ?>
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('確定接受此報價？接受後我們將發出正式發票。');">
+                                                    <input type="hidden" name="quote_id" value="<?= (int)$pq['id'] ?>">
+                                                    <button type="submit" name="portal_quote_action" value="accept" class="btn btn-sm btn-success fw-bold">接受</button>
+                                                </form>
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('確定拒絕此報價？');">
+                                                    <input type="hidden" name="quote_id" value="<?= (int)$pq['id'] ?>">
+                                                    <button type="submit" name="portal_quote_action" value="decline" class="btn btn-sm btn-outline-danger">拒絕</button>
+                                                </form>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <?php if ($q_total_pages > 1): ?>
+                        <div class="d-flex justify-content-center mt-4">
+                            <nav>
+                                <ul class="pagination shadow-sm">
+                                    <li class="page-item <?= $q_page <= 1 ? 'disabled' : '' ?>">
+                                        <a class="page-link text-slate-500" href="?tab=quotes&p_page=<?= $p_page ?>&i_page=<?= $i_page ?>&q_page=<?= $q_page-1 ?>">上一頁</a>
+                                    </li>
+                                    <?php for ($i = 1; $i <= $q_total_pages; $i++): ?>
+                                    <li class="page-item <?= $i == $q_page ? 'active' : '' ?>">
+                                        <a class="page-link <?= $i == $q_page ? 'bg-primary border-primary' : 'text-slate-500' ?>" href="?tab=quotes&p_page=<?= $p_page ?>&i_page=<?= $i_page ?>&q_page=<?= $i ?>"><?= $i ?></a>
+                                    </li>
+                                    <?php endfor; ?>
+                                    <li class="page-item <?= $q_page >= $q_total_pages ? 'disabled' : '' ?>">
+                                        <a class="page-link text-slate-500" href="?tab=quotes&p_page=<?= $p_page ?>&i_page=<?= $i_page ?>&q_page=<?= $q_page+1 ?>">下一頁</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+
                 <div class="tab-pane fade <?= $active_tab == 'invoices' ? 'show active' : '' ?>" id="invoices" role="tabpanel">
                     <?php if (empty($invoices)): ?>
                         <div class="text-center py-5 bg-light rounded-3 border border-light-subtle my-2">
@@ -403,7 +564,7 @@ $inv_status_options = [
                                 <tbody class="border-top-0">
                                     <?php foreach ($invoices as $inv): 
                                         $istat = $inv_status_options[$inv['status']] ?? $inv_status_options['draft'];
-                                        $is_unpaid = in_array($inv['status'], ['sent', 'overdue', 'draft']);
+                                        $is_unpaid = in_array($inv['status'], ['sent', 'overdue'], true);
                                     ?>
                                     <tr>
                                         <td class="ps-3 py-3 fw-bold text-slate-800">

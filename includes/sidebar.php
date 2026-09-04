@@ -73,6 +73,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <div class="sidebar-heading">財務與計費</div>
         <ul class="sidebar-nav">
             <li>
+                <a href="quotes.php" class="sidebar-link <?= in_array($current_page, ['quotes.php', 'quote_edit.php', 'quote_pdf.php'], true) ? 'active' : '' ?>">
+                    <i class="bi bi-file-earmark-ruled"></i> 報價單 Quotes
+                </a>
+            </li>
+            <li>
                 <a href="invoices.php" class="sidebar-link <?= $current_page == 'invoices.php' ? 'active' : '' ?>">
                     <i class="bi bi-receipt-cutoff"></i> 發票管理 Invoices
                 </a>

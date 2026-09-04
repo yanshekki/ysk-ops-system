@@ -30,6 +30,22 @@ function get_progress_color(int $percent): string {
 }
 
 /**
+ * 統一報價單狀態的 Badge 樣式映射
+ */
+function get_quote_status_badge(string $status): array {
+    $map = [
+        'draft'      => ['label' => '草稿', 'color' => 'secondary'],
+        'sent'       => ['label' => '待回覆', 'color' => 'warning'],
+        'accepted'   => ['label' => '已接受', 'color' => 'success'],
+        'declined'   => ['label' => '已拒絕', 'color' => 'danger'],
+        'expired'    => ['label' => '已過期', 'color' => 'dark'],
+        'converted'  => ['label' => '已轉換', 'color' => 'primary'],
+        'superseded' => ['label' => '已修訂', 'color' => 'secondary'],
+    ];
+    return $map[$status] ?? ['label' => strtoupper($status), 'color' => 'secondary'];
+}
+
+/**
  * 統一發票狀態的 Badge 樣式映射
  */
 function get_invoice_status_badge(string $status): array {

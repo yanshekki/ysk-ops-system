@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
+require_once 'includes/numbering.php';
 require_login();
 
 // 防護：PM, Finance, Viewer 可進入 (Developer 無需接觸財務)
@@ -30,26 +31,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $subtotal = (float)$_POST['subtotal'];
             $tax_percent = (float)($_POST['tax_percent'] ?? 0);
             $total_amount = $subtotal + ($subtotal * ($tax_percent / 100));
-            
-            // 自動生成發票單號 (INV-YYYYMMDD-XXX)
-            $invoice_number = 'INV-' . date('Ymd') . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+            $notes = trim($_POST['notes'] ?? '');
+            $project_id = !empty($_POST['project_id']) ? (int)$_POST['project_id'] : null;
             
             $data = [
-                'invoice_number' => $invoice_number,
+                'invoice_number' => next_invoice_number(),
                 'client_id' => (int)$_POST['client_id'],
-                'project_id' => !empty($_POST['project_id']) ? (int)$_POST['project_id'] : null,
+                'project_id' => $project_id,
                 'issue_date' => $_POST['issue_date'],
                 'due_date' => $_POST['due_date'],
                 'subtotal' => $subtotal,
                 'tax_percent' => $tax_percent,
                 'total_amount' => $total_amount,
                 'status' => 'draft',
-                'notes' => trim($_POST['notes'] ?? ''),
-                'created_by' => $_SESSION['user_id']
+                'notes' => $notes,
+                'created_by' => $_SESSION['user_id'],
+                'source' => 'manual',
             ];
             
             if (!empty($data['client_id']) && $subtotal > 0) {
-                db_insert('invoices', $data);
+                try {
+                    $new_id = (int)db_insert('invoices', $data);
+                } catch (PDOException $e) {
+                    $data['invoice_number'] = next_invoice_number();
+                    $new_id = (int)db_insert('invoices', $data);
+                }
+                $invoice_number = $data['invoice_number'];
+                $project_title = '';
+                if ($project_id) {
+                    $pj = db_fetch_one("SELECT title FROM projects WHERE id = ?", [$project_id]);
+                    $project_title = $pj['title'] ?? '';
+                }
+                try {
+                    db_insert('invoice_items', [
+                        'invoice_id' => $new_id,
+                        'sort_order' => 0,
+                        'title' => $project_title !== '' ? $project_title : 'Professional Services & Consulting',
+                        'description' => $notes,
+                        'qty' => 1,
+                        'unit' => '項',
+                        'unit_price' => $subtotal,
+                        'line_total' => $subtotal,
+                    ]);
+                } catch (Throwable $e) {
+                    // invoice_items 尚未 migration 時略過
+                }
                 $success = "發票 #{$invoice_number} 已成功建立！";
             } else {
                 $error = '請選擇客戶並輸入有效的金額！';
@@ -109,14 +135,26 @@ $total_count = db_fetch_one("SELECT COUNT(*) as total FROM invoices i LEFT JOIN 
 $total_pages = ceil($total_count / $per_page);
 
 // 獲取發票列表
-$sql = "SELECT i.*, c.company_name, p.title as project_title 
+$sql = "SELECT i.*, c.company_name, p.title as project_title, q.quote_number
         FROM invoices i 
         JOIN clients c ON i.client_id = c.id 
         LEFT JOIN projects p ON i.project_id = p.id 
+        LEFT JOIN quotes q ON q.id = i.quote_id
         WHERE $where_sql 
         ORDER BY i.created_at DESC 
         LIMIT $per_page OFFSET $offset";
-$invoices = db_fetch_all($sql, $params);
+try {
+    $invoices = db_fetch_all($sql, $params);
+} catch (Throwable $e) {
+    $sql = "SELECT i.*, c.company_name, p.title as project_title 
+            FROM invoices i 
+            JOIN clients c ON i.client_id = c.id 
+            LEFT JOIN projects p ON i.project_id = p.id 
+            WHERE $where_sql 
+            ORDER BY i.created_at DESC 
+            LIMIT $per_page OFFSET $offset";
+    $invoices = db_fetch_all($sql, $params);
+}
 
 // 獲取選單用資料
 $clients = db_fetch_all("SELECT id, company_name FROM clients WHERE status='active' ORDER BY company_name");
@@ -224,6 +262,9 @@ include 'includes/header.php';
                                     <td>
                                         <div class="fw-bold text-slate-700"><?= htmlspecialchars($i['company_name']) ?></div>
                                         <small class="text-muted"><i class="bi bi-folder2 me-1"></i><?= htmlspecialchars($i['project_title'] ?: '無關聯專案') ?></small>
+                                        <?php if (!empty($i['quote_number'])): ?>
+                                            <div class="small"><a href="quote_pdf.php?id=<?= (int)($i['quote_id'] ?? 0) ?>" target="_blank" class="text-decoration-none"><?= htmlspecialchars($i['quote_number']) ?></a></div>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <div class="small text-slate-600 mb-1">開立: <?= $i['issue_date'] ?></div>
