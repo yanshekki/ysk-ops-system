@@ -323,7 +323,7 @@ $status_options = [
                                 </tr>
                             </thead>
                             <tbody class="border-top-0">
-                                <?php foreach ($timesheets as $ts): 
+                                <?php $modals_html = ''; foreach ($timesheets as $ts): 
                                     $s_info = $status_options[$ts['is_approved']] ?? $status_options['0'];
                                     $avatar_char = mb_substr($ts['user_name'] ?? 'U', 0, 1, 'UTF-8');
                                     $is_owner = ($ts['user_id'] == $current_user_id);
@@ -387,7 +387,7 @@ $status_options = [
                                     </td>
                                 </tr>
 
-                                <?php if ($is_owner || $can_approve): ?>
+                                <?php if ($is_owner || $can_approve): ob_start(); ?>
                                 <div class="modal fade" id="editTimesheetModal<?= $ts['id'] ?>" tabindex="-1">
                                     <div class="modal-dialog modal-dialog-centered">
                                         <div class="modal-content border-0 shadow-lg">
@@ -464,7 +464,7 @@ $status_options = [
                                         </div>
                                     </div>
                                 </div>
-                                <?php endif; ?>
+                                <?php $modals_html .= ob_get_clean(); endif; ?>
                                 <?php endforeach; ?>
 
                                 <?php if (empty($timesheets)): ?>
@@ -480,6 +480,7 @@ $status_options = [
                     </div>
                 </div>
             </div>
+            <?= $modals_html ?? '' ?>
 
             <?php if ($total_pages > 1): ?>
             <div class="d-flex justify-content-center mt-4">

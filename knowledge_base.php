@@ -181,7 +181,7 @@ $categories = [
             <?php if ($error): ?><div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= $error ?></div><?php endif; ?>
             
             <div class="row g-4 mb-4">
-                <?php foreach ($articles as $a): 
+                <?php $modals_html = ''; foreach ($articles as $a): 
                     $cat_info = $categories[$a['category']] ?? $categories['other'];
                     $avatar_char = mb_substr($a['author'] ?? 'U', 0, 1, 'UTF-8');
                     // 🛡️ 判斷此使用者是否有權編輯此文章
@@ -241,6 +241,7 @@ $categories = [
                     </div>
                 </div>
 
+                <?php ob_start(); ?>
                 <div class="modal fade" id="readArticleModal<?= $a['id'] ?>" tabindex="-1">
                     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                         <div class="modal-content border-0 shadow-lg">
@@ -330,6 +331,7 @@ $categories = [
                     </div>
                 </div>
                 <?php endif; ?>
+                <?php $modals_html .= ob_get_clean(); ?>
                 <?php endforeach; ?>
 
                 <?php if (empty($articles)): ?>
@@ -341,6 +343,7 @@ $categories = [
                 </div>
                 <?php endif; ?>
             </div>
+            <?= $modals_html ?? '' ?>
             
             <?php if ($total_pages > 1): ?>
             <div class="d-flex justify-content-center mt-2">

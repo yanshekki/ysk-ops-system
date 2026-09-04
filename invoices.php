@@ -270,7 +270,7 @@ include 'includes/header.php';
                                 </tr>
                             </thead>
                             <tbody class="border-top-0">
-                                <?php foreach ($invoices as $i): 
+                                <?php $modals_html = ''; foreach ($invoices as $i): 
                                     $s_badge = $status_badges[$i['status']] ?? $status_badges['draft'];
                                     $is_overdue = ($i['status'] !== 'paid' && $i['status'] !== 'cancelled' && strtotime($i['due_date']) < time());
                                     if ($is_overdue && $i['status'] !== 'overdue') {
@@ -333,8 +333,7 @@ include 'includes/header.php';
                                     </td>
                                 </tr>
 
-                                <!-- 🛡️ 編輯 Modal 只對有權限的人渲染 -->
-                                <?php if(has_any_role(['admin', 'finance'])): ?>
+                                <?php if(has_any_role(['admin', 'finance'])): ob_start(); ?>
                                 <div class="modal fade" id="editInvoiceModal<?= $i['id'] ?>" tabindex="-1">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content border-0 shadow-lg">
@@ -398,7 +397,7 @@ include 'includes/header.php';
                                         </div>
                                     </div>
                                 </div>
-                                <?php endif; ?>
+                                <?php $modals_html .= ob_get_clean(); endif; ?>
                                 <?php endforeach; ?>
 
                                 <?php if (empty($invoices)): ?>
@@ -414,6 +413,7 @@ include 'includes/header.php';
                     </div>
                 </div>
             </div>
+            <?= $modals_html ?? '' ?>
 
             <?php if ($total_pages > 1): ?>
             <div class="d-flex justify-content-center mt-4">

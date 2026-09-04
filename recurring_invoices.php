@@ -234,7 +234,7 @@ $status_options = [
                                 </tr>
                             </thead>
                             <tbody class="border-top-0">
-                                <?php foreach ($recurring_invoices as $r): 
+                                <?php $modals_html = ''; foreach ($recurring_invoices as $r): 
                                     $f_info = $frequency_labels[$r['frequency']] ?? $frequency_labels['monthly'];
                                     $s_info = $status_options[$r['status']] ?? $status_options['ended'];
                                 ?>
@@ -299,8 +299,7 @@ $status_options = [
                                     </td>
                                 </tr>
                                 
-                                <!-- 🛡️ 編輯 Modal 只對有權限的人渲染 -->
-                                <?php if(has_any_role(['admin', 'finance'])): ?>
+                                <?php if(has_any_role(['admin', 'finance'])): ob_start(); ?>
                                 <div class="modal fade" id="editRecurringModal<?= $r['id'] ?>" tabindex="-1">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content border-0 shadow-lg">
@@ -406,7 +405,7 @@ $status_options = [
                                         </div>
                                     </div>
                                 </div>
-                                <?php endif; ?>
+                                <?php $modals_html .= ob_get_clean(); endif; ?>
                             <?php endforeach; ?>
                             
                             <?php if (empty($recurring_invoices)): ?>
@@ -421,6 +420,7 @@ $status_options = [
                     </table>
                 </div>
             </div>
+            <?= $modals_html ?? '' ?>
         </div>
         
         <?php if ($total_pages > 1): ?>

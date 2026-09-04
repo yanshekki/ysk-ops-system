@@ -212,7 +212,7 @@ include 'includes/header.php';
             <?php if ($error): ?><div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-circle me-2"></i><?= $error ?></div><?php endif; ?>
 
             <div class="row g-4">
-                <?php foreach ($projects as $p): 
+                <?php $modals_html = ''; foreach ($projects as $p): 
                     $progress = (int)$p['progress_percent'];
                     $stat = $status_options[$p['status']] ?? $status_options['planning'];
                     $svc_label = $service_options[$p['service_type']] ?? '其他服務';
@@ -295,7 +295,7 @@ include 'includes/header.php';
                     </div>
                 </div>
 
-                <?php if(has_any_role(['admin', 'pm'])): ?>
+                <?php if(has_any_role(['admin', 'pm'])): ob_start(); ?>
                 <div class="modal fade" id="editProjectModal<?= $p['id'] ?>" tabindex="-1">
                     <div class="modal-dialog modal-lg modal-dialog-centered">
                         <div class="modal-content border-0 shadow-lg">
@@ -385,7 +385,7 @@ include 'includes/header.php';
                         </div>
                     </div>
                 </div>
-                <?php endif; ?>
+                <?php $modals_html .= ob_get_clean(); endif; ?>
                 <?php endforeach; ?>
 
                 <?php if (empty($projects)): ?>
@@ -397,6 +397,7 @@ include 'includes/header.php';
                 </div>
                 <?php endif; ?>
             </div>
+            <?= $modals_html ?? '' ?>
 
             <?php if ($total_pages > 1): ?>
             <div class="d-flex justify-content-center mt-5">

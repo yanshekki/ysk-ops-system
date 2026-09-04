@@ -231,7 +231,7 @@ include 'includes/header.php';
                                 </tr>
                             </thead>
                             <tbody class="border-top-0">
-                                <?php foreach ($tasks as $t): 
+                                <?php $modals_html = ''; foreach ($tasks as $t): 
                                     $p_badge = $priority_badges[$t['priority']] ?? $priority_badges['medium'];
                                     $s_badge = $status_badges[$t['status']] ?? $status_badges['todo'];
                                     $is_overdue = ($t['due_date'] && strtotime($t['due_date']) < time() && $t['status'] !== 'done');
@@ -291,7 +291,7 @@ include 'includes/header.php';
                                     </td>
                                 </tr>
 
-                                <?php if(has_any_role(['admin', 'pm']) || (has_role('developer') && $t['assigned_to_id'] == $_SESSION['user_id'])): ?>
+                                <?php if(has_any_role(['admin', 'pm']) || (has_role('developer') && $t['assigned_to_id'] == $_SESSION['user_id'])): ob_start(); ?>
                                 <div class="modal fade" id="editTaskModal<?= $t['id'] ?>" tabindex="-1">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content border-0 shadow-lg">
@@ -383,7 +383,7 @@ include 'includes/header.php';
                                         </div>
                                     </div>
                                 </div>
-                                <?php endif; ?>
+                                <?php $modals_html .= ob_get_clean(); endif; ?>
                                 <?php endforeach; ?>
 
                                 <?php if (empty($tasks)): ?>
@@ -399,6 +399,7 @@ include 'includes/header.php';
                     </div>
                 </div>
             </div>
+            <?= $modals_html ?? '' ?>
 
             <?php if ($total_pages > 1): ?>
             <div class="d-flex justify-content-center mt-4">

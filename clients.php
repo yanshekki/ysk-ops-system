@@ -208,7 +208,7 @@ $status_labels = [
                                 </tr>
                             </thead>
                             <tbody class="border-top-0">
-                                <?php foreach ($clients as $c): 
+                                <?php $modals_html = ''; foreach ($clients as $c): 
                                     $status_info = $status_labels[$c['status']] ?? $status_labels['inactive'];
                                     $avatar_char = mb_substr($c['company_name'] ?? 'C', 0, 1, 'UTF-8');
                                 ?>
@@ -258,7 +258,7 @@ $status_labels = [
                                     </td>
                                 </tr>
                                 
-                                <?php if (has_any_role(['admin', 'pm'])): ?>
+                                <?php if (has_any_role(['admin', 'pm'])): ob_start(); ?>
                                 <div class="modal fade" id="editClientModal<?= $c['id'] ?>" tabindex="-1">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content border-0 shadow-lg">
@@ -364,7 +364,7 @@ $status_labels = [
                                         </div>
                                     </div>
                                 </div>
-                                <?php endif; ?>
+                                <?php $modals_html .= ob_get_clean(); endif; ?>
 
                                 <?php endforeach; ?>
                                 
@@ -381,6 +381,7 @@ $status_labels = [
                     </div>
                 </div>
             </div>
+            <?= $modals_html ?? '' ?>
             
             <?php if ($total_pages > 1): ?>
             <div class="d-flex justify-content-center mt-3">

@@ -246,7 +246,7 @@ $roles = [
                                 </tr>
                             </thead>
                             <tbody class="border-top-0">
-                                <?php foreach ($users as $u): 
+                                <?php $modals_html = ''; foreach ($users as $u): 
                                     $r_info = $roles[$u['role']] ?? ['label' => $u['role'], 'short' => $u['role'], 'color' => 'secondary', 'icon' => 'bi-person'];
                                     $avatar_char = mb_substr($u['full_name'] ?? $u['username'], 0, 1, 'UTF-8');
                                 ?>
@@ -295,6 +295,7 @@ $roles = [
                                     </td>
                                 </tr>
                                 
+                                <?php ob_start(); ?>
                                 <div class="modal fade" id="editUserModal<?= $u['id'] ?>" tabindex="-1">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content border-0 shadow-lg">
@@ -384,6 +385,7 @@ $roles = [
                                         </div>
                                     </div>
                                 </div>
+                                <?php $modals_html .= ob_get_clean(); ?>
                                 <?php endforeach; ?>
                                 
                                 <?php if (empty($users)): ?>
@@ -399,6 +401,7 @@ $roles = [
                     </div>
                 </div>
             </div>
+            <?= $modals_html ?? '' ?>
             
             <?php if ($total_pages > 1): ?>
             <div class="d-flex justify-content-center mt-4">
